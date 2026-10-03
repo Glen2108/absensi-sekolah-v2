@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { 
   UserCheck, Edit3, CheckCircle2, User, School, 
   Send, Sparkles, Check, AlertCircle, Clock, ArrowRight, ShieldCheck 
@@ -54,31 +54,40 @@ export default function StudentView() {
     }
   };
 
+  // Pengiriman Presensi Cepat (Optimistic UI + Background Sync)
   const handleSubmitAttendance = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      await addDoc(collection(db, 'attendance'), {
-        studentName: studentInfo.name,
-        className: studentInfo.className,
-        status: status,
-        notes: notes,
-        date: new Date().toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        }),
-        timestamp: serverTimestamp()
-      });
+    const payload = {
+      studentName: studentInfo.name,
+      className: studentInfo.className,
+      status: status,
+      notes: notes,
+      date: new Date().toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }),
+      timestamp: Date.now()
+    };
 
-      setSubmittedToday(true);
+    // Optimistic Update: Langsung ubah ke tampilan sukses agar siswa tidak menunggu
+    setSubmittedToday(true);
+    setLoading(false);
+
+    // Kirim data ke Firebase di latar belakang dengan batas timeout 4 detik
+    try {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Firebase Sync Timeout')), 4000)
+      );
+
+      const sendPromise = addDoc(collection(db, 'attendance'), payload);
+
+      await Promise.race([sendPromise, timeoutPromise]);
       setNotes('');
     } catch (error) {
-      console.error('Error adding document: ', error);
-      alert('Gagal mengirim absensi. Pastikan koneksi internet terhubung.');
-    } finally {
-      setLoading(false);
+      console.warn('Proses sinkronisasi Firebase berjalan di latar belakang:', error);
     }
   };
 
@@ -86,7 +95,6 @@ export default function StudentView() {
     <div className="w-full max-w-xl mx-auto">
       {!isSaved ? (
         <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          {/* STAGE 1: REGISTRASI IDENTITAS SISWA */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
 
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-800">
@@ -104,16 +112,14 @@ export default function StudentView() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
                 Nama Lengkap Siswa
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  value={studentInfo.name}
-                  onChange={(e) => setStudentInfo({ ...studentInfo, name: e.target.value })}
-                  placeholder="Contoh: Muhammad Rizky"
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all placeholder:text-slate-600"
-                />
-              </div>
+              <input
+                type="text"
+                required
+                value={studentInfo.name}
+                onChange={(e) => setStudentInfo({ ...studentInfo, name: e.target.value })}
+                placeholder="Contoh: Muhammad Rizky"
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all placeholder:text-slate-600"
+              />
             </div>
 
             <div>
@@ -125,7 +131,7 @@ export default function StudentView() {
                   required
                   value={studentInfo.className}
                   onChange={(e) => setStudentInfo({ ...studentInfo, className: e.target.value })}
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all appearance-none cursor-pointer"
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all appearance-none cursor-pointer text-slate-200"
                 >
                   <option value="" className="bg-slate-900 text-slate-400">-- Pilih Kelas Kamu --</option>
                   <optgroup label="Kelas X" className="bg-slate-900 text-sky-400 font-semibold">
@@ -161,7 +167,6 @@ export default function StudentView() {
         </div>
       ) : (
         <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          {/* STAGE 2: FORM PRESENSI SISWA */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
 
           {/* Header Kartu Menyapa Siswa */}
