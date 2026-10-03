@@ -23,10 +23,14 @@ export default function StudentView() {
   useEffect(() => {
     const savedProfile = localStorage.getItem('absensi_student_profile');
     if (savedProfile) {
-      const parsed = JSON.parse(savedProfile);
-      if (parsed.name && parsed.className) {
-        setStudentInfo(parsed);
-        setIsSaved(true);
+      try {
+        const parsed = JSON.parse(savedProfile);
+        if (parsed.name && parsed.className) {
+          setStudentInfo(parsed);
+          setIsSaved(true);
+        }
+      } catch (e) {
+        console.error('Error parsing profile:', e);
       }
     }
   }, []);
@@ -80,13 +84,9 @@ export default function StudentView() {
 
   return (
     <div className="w-full max-w-xl mx-auto">
-      
-      {/* ========================================================= */}
-      {/* STAGE 1: REGISTRASI IDENTITAS SISWA (JIKA BELUM DIISI) */}
-      {/* ========================================================= */}
       {!isSaved ? (
         <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          
+          {/* STAGE 1: REGISTRASI IDENTITAS SISWA */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
 
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-800">
@@ -144,7 +144,7 @@ export default function StudentView() {
                     ))}
                   </optgroup>
                 </select>
-                <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+                <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs">
                   ▼
                 </div>
               </div>
@@ -160,12 +160,8 @@ export default function StudentView() {
           </form>
         </div>
       ) : (
-
-      /* ========================================================= */
-      /* STAGE 2: FORM PRESENSI SISWA (BILA PROFIL SUDAH TERSIMPAN)*/
-      {/* ========================================================= */}
         <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          
+          {/* STAGE 2: FORM PRESENSI SISWA */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
 
           {/* Header Kartu Menyapa Siswa */}
@@ -173,7 +169,7 @@ export default function StudentView() {
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 p-0.5 shadow-md shadow-sky-500/20">
                 <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-sky-400 font-bold text-lg">
-                  {studentInfo.name.charAt(0).toUpperCase()}
+                  {studentInfo.name ? studentInfo.name.charAt(0).toUpperCase() : 'S'}
                 </div>
               </div>
               <div>
@@ -220,8 +216,7 @@ export default function StudentView() {
             </div>
           ) : (
             <form onSubmit={handleSubmitAttendance} className="mt-6 space-y-6">
-              
-              {/* Opsi Status Kehadiran (Interactive Cards dengan Ikon & Warna) */}
+              {/* Opsi Status Kehadiran */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">
                   Status Kehadiran Hari Ini
@@ -289,13 +284,10 @@ export default function StudentView() {
                   </>
                 )}
               </button>
-
             </form>
           )}
-
         </div>
       )}
-
     </div>
   );
 }
