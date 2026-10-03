@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, onSnapshot } from 'firebase/firestore';
 import { 
-  UserCheck, Edit3, CheckCircle2, User, School, 
-  Send, Sparkles, Check, AlertCircle, Clock, ArrowRight, ShieldCheck 
+  UserCheck, Edit3, CheckCircle2, User, Send, 
+  AlertCircle, Clock, ArrowRight, Lock, Radio
 } from 'lucide-react';
 
 const DAFTAR_KELAS = [
@@ -19,7 +19,23 @@ export default function StudentView() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [submittedToday, setSubmittedToday] = useState(false);
+  
+  // Realtime Status Sesi Absensi dari Guru
+  const [sessionData, setSessionData] = useState({ isOpen: false, targetClass: 'SEMUA', sessionTitle: '' });
 
+  // 1. Dengarkan Status Sesi Absensi Realtime dari Firestore
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'active_session'), (docSnap) => {
+      if (docSnap.exists()) {
+        setSessionData(docSnap.data());
+      } else {
+        setSessionData({ isOpen: false, targetClass: 'SEMUA', sessionTitle: '' });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Ambil Profil & Status Absen Siswa dari LocalStorage
   useEffect(() => {
     const savedProfile = localStorage.getItem('absensi_student_profile');
     if (savedProfile) {
@@ -28,6 +44,12 @@ export default function StudentView() {
         if (parsed.name && parsed.className) {
           setStudentInfo(parsed);
           setIsSaved(true);
+
+          // Cek apakah sudah pernah absen hari ini
+          const todayKey = `absen_done_${parsed.name}_${parsed.className}_${new Date().toLocaleDateString('id-ID')}`;
+          if (localStorage.getItem(todayKey)) {
+            setSubmittedToday(true);
+          }
         }
       } catch (e) {
         console.error('Error parsing profile:', e);
@@ -35,6 +57,7 @@ export default function StudentView() {
     }
   }, []);
 
+  // Simpan Identitas Siswa
   const handleSaveProfile = (e) => {
     e.preventDefault();
     if (!studentInfo.name.trim() || !studentInfo.className) {
@@ -43,10 +66,15 @@ export default function StudentView() {
     }
     localStorage.setItem('absensi_student_profile', JSON.stringify(studentInfo));
     setIsSaved(true);
+
+    const todayKey = `absen_done_${studentInfo.name}_${studentInfo.className}_${new Date().toLocaleDateString('id-ID')}`;
+    if (localStorage.getItem(todayKey)) {
+      setSubmittedToday(true);
+    }
   };
 
   const handleResetProfile = () => {
-    if (confirm('Apakah Anda yakin ingin mengganti profil siswa di perangkat ini?')) {
+    if (confirm('Apakah Anda yakin ingin mengganti identitas siswa di perangkat ini?')) {
       localStorage.removeItem('absensi_student_profile');
       setStudentInfo({ name: '', className: '' });
       setIsSaved(false);
@@ -54,56 +82,61 @@ export default function StudentView() {
     }
   };
 
-  // Pengiriman Presensi Cepat (Optimistic UI + Background Sync)
+  // Proses Kirim Presensi (Tepat 1 Kali)
   const handleSubmitAttendance = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    const todayDate = new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
 
     const payload = {
       studentName: studentInfo.name,
       className: studentInfo.className,
       status: status,
       notes: notes,
-      date: new Date().toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      }),
+      subject: 'Informatika',
+      teacher: 'Glendy A. Taawoeda, S.Pd',
+      date: todayDate,
       timestamp: Date.now()
     };
 
-    // Optimistic Update: Langsung ubah ke tampilan sukses agar siswa tidak menunggu
+    // Tandai bahwa siswa SUDAH ABSEN HARI INI di LocalStorage
+    const todayKey = `absen_done_${studentInfo.name}_${studentInfo.className}_${new Date().toLocaleDateString('id-ID')}`;
+    localStorage.setItem(todayKey, 'true');
+
     setSubmittedToday(true);
     setLoading(false);
 
-    // Kirim data ke Firebase di latar belakang dengan batas timeout 4 detik
     try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Firebase Sync Timeout')), 4000)
-      );
-
-      const sendPromise = addDoc(collection(db, 'attendance'), payload);
-
-      await Promise.race([sendPromise, timeoutPromise]);
+      await addDoc(collection(db, 'attendance'), payload);
       setNotes('');
     } catch (error) {
-      console.warn('Proses sinkronisasi Firebase berjalan di latar belakang:', error);
+      console.warn('Sync Firestore background:', error);
     }
   };
 
+  // Apakah kelas siswa cocok dengan target kelas sesi guru?
+  const isClassEligible = sessionData.targetClass === 'SEMUA' || sessionData.targetClass === studentInfo.className;
+
   return (
     <div className="w-full max-w-xl mx-auto">
+      
+      {/* TAMPILAN 1: ISAN IDENTITAS SISWA */}
       {!isSaved ? (
-        <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
 
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-800">
-            <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 shadow-inner">
+            <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
               <User className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white tracking-tight">Identitas Siswa</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Isi data sekali saja, sistem akan mengingatnya di perangkat ini.</p>
+              <h2 className="text-xl font-bold text-white">Identitas Siswa</h2>
+              <p className="text-xs text-slate-400 mt-0.5">SMA Negeri 4 Manado — Mata Pelajaran Informatika</p>
             </div>
           </div>
 
@@ -117,8 +150,8 @@ export default function StudentView() {
                 required
                 value={studentInfo.name}
                 onChange={(e) => setStudentInfo({ ...studentInfo, name: e.target.value })}
-                placeholder="Contoh: Muhammad Rizky"
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all placeholder:text-slate-600"
+                placeholder="Contoh: Hizkia Wenas"
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-500"
               />
             </div>
 
@@ -126,50 +159,47 @@ export default function StudentView() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
                 Pilih Kelas
               </label>
-              <div className="relative">
-                <select
-                  required
-                  value={studentInfo.className}
-                  onChange={(e) => setStudentInfo({ ...studentInfo, className: e.target.value })}
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all appearance-none cursor-pointer text-slate-200"
-                >
-                  <option value="" className="bg-slate-900 text-slate-400">-- Pilih Kelas Kamu --</option>
-                  <optgroup label="Kelas X" className="bg-slate-900 text-sky-400 font-semibold">
-                    {DAFTAR_KELAS.filter(k => k.startsWith('X-')).map((k) => (
-                      <option key={k} value={k} className="bg-slate-900 text-slate-200 font-normal">Kelas {k}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Kelas XI" className="bg-slate-900 text-sky-400 font-semibold">
-                    {DAFTAR_KELAS.filter(k => k.startsWith('XI-')).map((k) => (
-                      <option key={k} value={k} className="bg-slate-900 text-slate-200 font-normal">Kelas {k}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Kelas XII" className="bg-slate-900 text-sky-400 font-semibold">
-                    {DAFTAR_KELAS.filter(k => k.startsWith('XII-')).map((k) => (
-                      <option key={k} value={k} className="bg-slate-900 text-slate-200 font-normal">Kelas {k}</option>
-                    ))}
-                  </optgroup>
-                </select>
-                <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs">
-                  ▼
-                </div>
-              </div>
+              <select
+                required
+                value={studentInfo.className}
+                onChange={(e) => setStudentInfo({ ...studentInfo, className: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-500 cursor-pointer"
+              >
+                <option value="">-- Pilih Kelas --</option>
+                <optgroup label="Kelas X">
+                  {DAFTAR_KELAS.filter(k => k.startsWith('X-')).map((k) => (
+                    <option key={k} value={k}>Kelas {k}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Kelas XI">
+                  {DAFTAR_KELAS.filter(k => k.startsWith('XI-')).map((k) => (
+                    <option key={k} value={k}>Kelas {k}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Kelas XII">
+                  {DAFTAR_KELAS.filter(k => k.startsWith('XII-')).map((k) => (
+                    <option key={k} value={k}>Kelas {k}</option>
+                  ))}
+                </optgroup>
+              </select>
             </div>
 
             <button
               type="submit"
-              className="w-full mt-3 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-600 hover:from-sky-400 hover:to-purple-500 text-white font-bold py-4 rounded-2xl shadow-xl shadow-sky-500/20 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2"
             >
-              <span>Simpan Identitas & Mulai Presensi</span>
+              <span>Simpan & Masuk Halaman Absensi</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         </div>
       ) : (
-        <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+
+      /* TAMPILAN 2: HALAMAN UTAMA ABSENSI SISWA */
+        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
 
-          {/* Header Kartu Menyapa Siswa */}
+          {/* Header Menyapa Siswa */}
           <div className="flex items-center justify-between pb-6 border-b border-slate-800">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 p-0.5 shadow-md shadow-sky-500/20">
@@ -178,12 +208,7 @@ export default function StudentView() {
                 </div>
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-full">
-                    Sistem Absensi Online
-                  </span>
-                </div>
-                <h2 className="text-xl font-extrabold text-white tracking-tight mt-0.5">
+                <h2 className="text-lg font-bold text-white">
                   Selamat Datang, {studentInfo.name}!
                 </h2>
                 <p className="text-xs text-slate-400">
@@ -194,34 +219,70 @@ export default function StudentView() {
 
             <button
               onClick={handleResetProfile}
-              className="p-2.5 text-slate-400 hover:text-white bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl transition-all"
+              className="p-2.5 text-slate-400 hover:text-white bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl transition-all"
               title="Ganti Profil Siswa"
             >
               <Edit3 className="w-4 h-4" />
             </button>
           </div>
 
-          {submittedToday ? (
+          {/* KONDISI 1: JIKA GURU BELUM MEMBUKA SESI ABSENSI */}
+          {!sessionData.isOpen ? (
             <div className="py-10 text-center space-y-4">
-              <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-950/50 animate-bounce">
+              <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto">
+                <Lock className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Sesi Absensi Belum Dibuka</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                Guru Pengampu <strong className="text-slate-200">Glendy A. Taawoeda, S.Pd</strong> belum membuka sesi absensi untuk mata pelajaran Informatika saat ini. Silakan tunggu hingga jam pelajaran dimulai.
+              </p>
+            </div>
+          ) : !isClassEligible ? (
+            
+          /* KONDISI 2: JIKA SESI DIBUKA UNTUK KELAS LAIN */
+            <div className="py-10 text-center space-y-4">
+              <div className="w-16 h-16 bg-sky-500/10 border border-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center mx-auto">
+                <Radio className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Sesi Khusus {sessionData.targetClass}</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Sesi absensi saat ini khusus ditujukan untuk <strong className="text-sky-400">Kelas {sessionData.targetClass}</strong>. Kamu terdaftar di Kelas {studentInfo.className}.
+              </p>
+            </div>
+          ) : submittedToday ? (
+
+          /* KONDISI 3: SISWA SUDAH ABSEN HARI INI (DIBATASI 1 KALI) */
+            <div className="py-10 text-center space-y-4">
+              <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-950/50">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
               <div>
-                <h3 className="text-2xl font-extrabold text-white tracking-tight">Presensi Berhasil Dikirim!</h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                  Terima kasih <strong className="text-slate-200">{studentInfo.name}</strong> ({studentInfo.className}), data kehadiranmu sudah berhasil dicatat di server.
+                <h3 className="text-2xl font-extrabold text-white tracking-tight">Presensi Berhasil Dicatat!</h3>
+                <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto leading-relaxed">
+                  Terima kasih <strong className="text-slate-200">{studentInfo.name}</strong> ({studentInfo.className}), kehadiranmu untuk mata pelajaran Informatika sudah tersimpan di server.
                 </p>
               </div>
-              <button
-                onClick={() => setSubmittedToday(false)}
-                className="mt-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all border border-slate-700"
-              >
-                Kirim Presensi Lagi
-              </button>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-950 border border-slate-800 rounded-full text-[11px] text-slate-400">
+                <Lock className="w-3 h-3 text-emerald-400" /> Absensi Terkunci (Batas 1x Sehari)
+              </div>
             </div>
           ) : (
+
+          /* KONDISI 4: SISWA BISA MENGISI ABSENSI */
             <form onSubmit={handleSubmitAttendance} className="mt-6 space-y-6">
-              {/* Opsi Status Kehadiran */}
+              
+              {/* Banner Info Sesi Aktif */}
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <p className="text-xs text-emerald-300 font-medium">
+                  Sesi Absensi Informatika DIBUKA oleh Guru Glendy A. Taawoeda, S.Pd
+                </p>
+              </div>
+
+              {/* Status Kehadiran */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">
                   Status Kehadiran Hari Ini
@@ -239,19 +300,16 @@ export default function StudentView() {
                         key={item.id}
                         type="button"
                         onClick={() => setStatus(item.id)}
-                        className={`relative p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 ${
+                        className={`relative p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all ${
                           isSelected
                             ? item.color === 'emerald'
-                              ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-950/40'
+                              ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
                               : item.color === 'amber'
-                              ? 'bg-amber-500/10 border-amber-500 text-amber-400 shadow-lg shadow-amber-950/40'
-                              : 'bg-rose-500/10 border-rose-500 text-rose-400 shadow-lg shadow-rose-950/40'
-                            : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                              ? 'bg-amber-500/10 border-amber-500 text-amber-400'
+                              : 'bg-rose-500/10 border-rose-500 text-rose-400'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'
                         }`}
                       >
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-current animate-ping"></div>
-                        )}
                         <IconComp className="w-6 h-6" />
                         <span className="text-xs font-bold">{item.label}</span>
                       </button>
@@ -270,7 +328,7 @@ export default function StudentView() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Tuliskan alasan jika Izin/Sakit..."
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-slate-100 text-sm focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all placeholder:text-slate-600 resize-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-slate-100 text-sm focus:outline-none focus:border-sky-500 resize-none"
                 ></textarea>
               </div>
 
@@ -278,7 +336,7 @@ export default function StudentView() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-600 hover:from-sky-400 hover:to-purple-500 active:scale-[0.99] text-white font-bold py-4 rounded-2xl shadow-xl shadow-sky-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-600 hover:from-sky-400 hover:to-purple-500 text-white font-bold py-4 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <span>Mengirim Presensi...</span>
@@ -289,10 +347,13 @@ export default function StudentView() {
                   </>
                 )}
               </button>
+
             </form>
           )}
+
         </div>
       )}
+
     </div>
   );
 }
