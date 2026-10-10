@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, doc, onSnapshot } from 'firebase/firestore';
 import { 
   UserCheck, Edit3, CheckCircle2, User, Send, 
-  AlertCircle, Clock, ArrowRight, Lock, Radio, CalendarDays
+  AlertCircle, Clock, ArrowRight, Lock, Radio, CalendarDays,
+  Sun, Sunset, MoonStar, Sparkles, Flame, Trophy, Compass
 } from 'lucide-react';
 import { JADWAL_GURU } from '../data/schedule';
 
@@ -22,6 +23,15 @@ export default function StudentView() {
   const [submittedToday, setSubmittedToday] = useState(false);
   
   const [sessionData, setSessionData] = useState({ isOpen: false, targetClass: 'SEMUA', sessionTitle: '' });
+  const [currentHour, setCurrentHour] = useState(new Date().getHours());
+
+  // Update jam real-time untuk penentuan sapaan
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentHour(new Date().getHours());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'settings', 'active_session'), (docSnap) => {
@@ -53,6 +63,76 @@ export default function StudentView() {
       }
     }
   }, []);
+
+  // Helper Sapaan Waktu & Icon Bergerak
+  const greetingData = useMemo(() => {
+    if (currentHour >= 5 && currentHour < 11) {
+      return {
+        text: 'Selamat Pagi',
+        icon: Sun,
+        color: 'text-amber-300',
+        bg: 'bg-amber-400/10 border-amber-400/30',
+        animate: 'animate-[spin_10s_linear_infinite]'
+      };
+    } else if (currentHour >= 11 && currentHour < 15) {
+      return {
+        text: 'Selamat Siang',
+        icon: Sun,
+        color: 'text-amber-400',
+        bg: 'bg-amber-500/10 border-amber-500/30',
+        animate: 'animate-pulse'
+      };
+    } else if (currentHour >= 15 && currentHour < 18.5) {
+      return {
+        text: 'Selamat Sore',
+        icon: Sunset,
+        color: 'text-orange-400',
+        bg: 'bg-orange-500/10 border-orange-500/30',
+        animate: 'animate-bounce'
+      };
+    } else {
+      return {
+        text: 'Selamat Malam',
+        icon: MoonStar,
+        color: 'text-indigo-300',
+        bg: 'bg-indigo-500/10 border-indigo-500/30',
+        animate: 'animate-pulse'
+      };
+    }
+  }, [currentHour]);
+
+  // Helper Kalimat Penyemangat Berdasarkan Tingkat Kelas (X, XI, XII)
+  const motivationalQuote = useMemo(() => {
+    const cls = studentInfo.className || '';
+    if (cls.startsWith('X-')) {
+      return {
+        tag: 'Eksplorasi Kelas X',
+        icon: Compass,
+        quote: 'Selamat bertumbuh di putih-abu! Bangun fondasi logika dan teknologi terbaikmu hari ini.',
+        color: 'from-amber-400/20 via-slate-900 to-slate-900 border-amber-400/30 text-amber-300'
+      };
+    } else if (cls.startsWith('XI-')) {
+      return {
+        tag: 'Semangat Kelas XI',
+        icon: Flame,
+        quote: 'Asah ketajaman problem solving dan pemikiran kritis. Terus melangkah menuju puncak potensi!',
+        color: 'from-amber-500/20 via-slate-900 to-slate-900 border-amber-500/30 text-amber-300'
+      };
+    } else if (cls.startsWith('XII-')) {
+      return {
+        tag: 'Perjuangan Akhir Kelas XII',
+        icon: Trophy,
+        quote: 'Masa depanmu makin dekat! Berikan dedikasi terbaik di setiap jam pelajaran menuju kelulusan impian.',
+        color: 'from-amber-300/20 via-slate-900 to-slate-900 border-amber-300/40 text-amber-200'
+      };
+    }
+    return {
+      tag: 'Semangat Belajar',
+      icon: Sparkles,
+      quote: 'Jadikan setiap detik pembelajaran Informatika sebagai langkah menuju masa depan cemerlang.',
+      color: 'from-amber-400/10 via-slate-900 to-slate-900 border-slate-800 text-slate-300'
+    };
+  }, [studentInfo.className]);
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -115,6 +195,8 @@ export default function StudentView() {
 
   const isClassEligible = sessionData.targetClass === 'SEMUA' || sessionData.targetClass === studentInfo.className;
   const classSchedule = JADWAL_GURU.find(j => j.className === studentInfo.className);
+  const GreetingIcon = greetingData.icon;
+  const QuoteIcon = motivationalQuote.icon;
 
   return (
     <div className="w-full max-w-xl mx-auto space-y-4">
@@ -191,21 +273,22 @@ export default function StudentView() {
         <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-slate-700 via-amber-400 to-amber-500"></div>
 
-          {/* Header Identitas Siswa */}
-          <div className="flex items-center justify-between pb-6 border-b border-slate-800">
+          {/* Header Identitas Siswa + Icon Sapaan Bergerak */}
+          <div className="flex items-center justify-between pb-5 border-b border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-700 via-amber-400 to-amber-500 p-0.5 shadow-md shadow-amber-500/10">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-700 via-amber-400 to-amber-500 p-0.5 shadow-md shadow-amber-500/10 shrink-0">
                 <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-300 font-extrabold text-lg">
                   {studentInfo.name ? studentInfo.name.charAt(0).toUpperCase() : 'S'}
                 </div>
               </div>
               <div>
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  {studentInfo.name}
-                  <span className="text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full font-mono">
-                    Siswa Aktif
-                  </span>
-                </h2>
+                {/* Badge Sapaan Jam Digital + Icon Bergerak */}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${greetingData.bg} ${greetingData.color}`}>
+                    <GreetingIcon className={`w-3.5 h-3.5 ${greetingData.animate}`} />
+                    <span>{greetingData.text}, {studentInfo.name.split(' ')[0]}!</span>
+                  </div>
+                </div>
                 <p className="text-xs text-amber-400 font-semibold">Kelas {studentInfo.className} — Informatika</p>
               </div>
             </div>
@@ -219,9 +302,23 @@ export default function StudentView() {
             </button>
           </div>
 
+          {/* KARTU KALIMAT PENYEMANGAT KELAS X, XI, XII */}
+          <div className={`mt-4 p-4 rounded-2xl border bg-gradient-to-r ${motivationalQuote.color} space-y-1.5 relative overflow-hidden`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-300">
+                <QuoteIcon className="w-4 h-4 text-amber-400" />
+                <span>{motivationalQuote.tag}</span>
+              </div>
+              <Sparkles className="w-3.5 h-3.5 text-amber-400/60" />
+            </div>
+            <p className="text-xs text-slate-200 leading-relaxed italic">
+              "{motivationalQuote.quote}"
+            </p>
+          </div>
+
           {/* WIDGET JADWAL SISWA */}
           {classSchedule && (
-            <div className="mt-5 p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
+            <div className="mt-4 p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
                   <CalendarDays className="w-4 h-4 text-amber-400" />
