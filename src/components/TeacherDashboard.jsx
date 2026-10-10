@@ -7,8 +7,10 @@ import {
   Power, Users, Search, Download, Lock, KeyRound, 
   LogOut, Trash2, ShieldAlert, Calendar, ArrowUpDown, 
   ChevronLeft, ChevronRight, Filter, CheckCircle2, 
-  Clock, AlertCircle, XCircle, X, Table, LayoutList
+  Clock, AlertCircle, XCircle, X, Table, LayoutList,
+  CalendarDays
 } from 'lucide-react';
+import { JADWAL_GURU } from '../data/schedule';
 
 const DAFTAR_KELAS = [
   'SEMUA',
@@ -432,6 +434,43 @@ export default function TeacherDashboard() {
         </div>
       )}
 
+      {/* WIDGET PENGINGAT JADWAL MENGAJAR GURU */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
+        <div className="flex items-center gap-3 mb-4 border-b border-slate-800 pb-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+            <CalendarDays className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-white text-base">Pengingat Jadwal Mengajar Informatika</h3>
+            <p className="text-xs text-slate-400">Jadwal Mengajar Mingguan Guru Glendy A. Taawoeda, S.Pd</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {JADWAL_GURU.map((item) => (
+            <div key={item.className} className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800/60 pb-2">
+                <span className="font-extrabold text-sky-400 text-sm">Kelas {item.className}</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-sky-500/10 text-sky-300 border border-sky-500/20 rounded-full font-mono">
+                  {item.totalJP}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {item.schedules.map((s, idx) => (
+                  <div key={idx} className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800/50 text-xs">
+                    <div className="flex justify-between font-semibold text-slate-200">
+                      <span>{s.day}</span>
+                      <span className="text-purple-400">{s.hours}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">{s.time} WITA</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* PANEL KONTROL SESI ABSENSI */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -649,7 +688,7 @@ export default function TeacherDashboard() {
                   {matrixData.dates.length === 0 ? (
                     <th className="p-2 text-slate-500 font-normal">Belum ada data tanggal</th>
                   ) : (
-                    matrixData.dates.map((dStr, idx) => (
+                    matrixData.dates.map((dStr) => (
                       <th key={dStr} className="p-1 min-w-[36px] max-w-[36px] font-mono text-slate-300">
                         <div className="writing-mode-vertical rotate-180 py-2 inline-block whitespace-nowrap">
                           {dStr}

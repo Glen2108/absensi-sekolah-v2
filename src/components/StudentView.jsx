@@ -3,8 +3,9 @@ import { db } from '../firebase';
 import { collection, addDoc, doc, onSnapshot } from 'firebase/firestore';
 import { 
   UserCheck, Edit3, CheckCircle2, User, Send, 
-  AlertCircle, Clock, ArrowRight, Lock, Radio
+  AlertCircle, Clock, ArrowRight, Lock, Radio, CalendarDays
 } from 'lucide-react';
+import { JADWAL_GURU } from '../data/schedule';
 
 const DAFTAR_KELAS = [
   'X-1', 'X-2', 'X-3', 'X-4',
@@ -20,10 +21,8 @@ export default function StudentView() {
   const [loading, setLoading] = useState(false);
   const [submittedToday, setSubmittedToday] = useState(false);
   
-  // Realtime Status Sesi Absensi dari Guru
   const [sessionData, setSessionData] = useState({ isOpen: false, targetClass: 'SEMUA', sessionTitle: '' });
 
-  // 1. Dengarkan Status Sesi Absensi Realtime dari Firestore
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'settings', 'active_session'), (docSnap) => {
       if (docSnap.exists()) {
@@ -35,7 +34,6 @@ export default function StudentView() {
     return () => unsubscribe();
   }, []);
 
-  // 2. Ambil Profil & Status Absen Siswa dari LocalStorage
   useEffect(() => {
     const savedProfile = localStorage.getItem('absensi_student_profile');
     if (savedProfile) {
@@ -45,7 +43,6 @@ export default function StudentView() {
           setStudentInfo(parsed);
           setIsSaved(true);
 
-          // Cek apakah sudah pernah absen hari ini
           const todayKey = `absen_done_${parsed.name}_${parsed.className}_${new Date().toLocaleDateString('id-ID')}`;
           if (localStorage.getItem(todayKey)) {
             setSubmittedToday(true);
@@ -57,7 +54,6 @@ export default function StudentView() {
     }
   }, []);
 
-  // Simpan Identitas Siswa
   const handleSaveProfile = (e) => {
     e.preventDefault();
     if (!studentInfo.name.trim() || !studentInfo.className) {
@@ -82,7 +78,6 @@ export default function StudentView() {
     }
   };
 
-  // Proses Kirim Presensi (Tepat 1 Kali)
   const handleSubmitAttendance = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -104,7 +99,6 @@ export default function StudentView() {
       timestamp: Date.now()
     };
 
-    // Tandai bahwa siswa SUDAH ABSEN HARI INI di LocalStorage
     const todayKey = `absen_done_${studentInfo.name}_${studentInfo.className}_${new Date().toLocaleDateString('id-ID')}`;
     localStorage.setItem(todayKey, 'true');
 
@@ -119,13 +113,14 @@ export default function StudentView() {
     }
   };
 
-  // Apakah kelas siswa cocok dengan target kelas sesi guru?
   const isClassEligible = sessionData.targetClass === 'SEMUA' || sessionData.targetClass === studentInfo.className;
 
+  // Cari jadwal khusus untuk kelas siswa saat ini
+  const classSchedule = JADWAL_GURU.find(j => j.className === studentInfo.className);
+
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="w-full max-w-xl mx-auto space-y-4">
       
-      {/* TAMPILAN 1: ISAN IDENTITAS SISWA */}
       {!isSaved ? (
         <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
@@ -195,7 +190,6 @@ export default function StudentView() {
         </div>
       ) : (
 
-      /* TAMPILAN 2: HALAMAN UTAMA ABSENSI SISWA */
         <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
 
@@ -226,7 +220,29 @@ export default function StudentView() {
             </button>
           </div>
 
-          {/* KONDISI 1: JIKA GURU BELUM MEMBUKA SESI ABSENSI */}
+          {/* WIDGET JADWAL PELAJARAN SISWA */}
+          {classSchedule && (
+            <div className="mt-5 p-4 bg-slate-950/80 border border-sky-500/20 rounded-2xl space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sky-400 font-bold text-xs">
+                  <CalendarDays className="w-4 h-4" />
+                  <span>JADWAL INFORMATIKA KELAS {studentInfo.className}</span>
+                </div>
+                <span className="text-[10px] bg-sky-500/10 text-sky-300 px-2 py-0.5 rounded-full font-mono border border-sky-500/20">
+                  {classSchedule.totalJP}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-2 pt-1">
+                {classSchedule.schedules.map((s, idx) => (
+                  <div key={idx} className="flex items-center justify-between bg-slate-900/90 px-3 py-2 rounded-xl text-xs">
+                    <span className="font-semibold text-white">{s.day} ({s.hours})</span>
+                    <span className="text-slate-400 font-mono text-[11px]">{s.time} WITA</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {!sessionData.isOpen ? (
             <div className="py-10 text-center space-y-4">
               <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto">
@@ -238,8 +254,6 @@ export default function StudentView() {
               </p>
             </div>
           ) : !isClassEligible ? (
-            
-          /* KONDISI 2: JIKA SESI DIBUKA UNTUK KELAS LAIN */
             <div className="py-10 text-center space-y-4">
               <div className="w-16 h-16 bg-sky-500/10 border border-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center mx-auto">
                 <Radio className="w-8 h-8" />
@@ -250,8 +264,6 @@ export default function StudentView() {
               </p>
             </div>
           ) : submittedToday ? (
-
-          /* KONDISI 3: SISWA SUDAH ABSEN HARI INI (DIBATASI 1 KALI) */
             <div className="py-10 text-center space-y-4">
               <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-950/50">
                 <CheckCircle2 className="w-10 h-10" />
@@ -267,11 +279,7 @@ export default function StudentView() {
               </div>
             </div>
           ) : (
-
-          /* KONDISI 4: SISWA BISA MENGISI ABSENSI */
             <form onSubmit={handleSubmitAttendance} className="mt-6 space-y-6">
-              
-              {/* Banner Info Sesi Aktif */}
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -282,7 +290,6 @@ export default function StudentView() {
                 </p>
               </div>
 
-              {/* Status Kehadiran */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">
                   Status Kehadiran Hari Ini
@@ -318,7 +325,6 @@ export default function StudentView() {
                 </div>
               </div>
 
-              {/* Catatan / Keterangan */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
                   Catatan / Keterangan <span className="text-slate-500 font-normal lowercase">(opsional)</span>
@@ -332,7 +338,6 @@ export default function StudentView() {
                 ></textarea>
               </div>
 
-              {/* Tombol Kirim */}
               <button
                 type="submit"
                 disabled={loading}
@@ -347,7 +352,6 @@ export default function StudentView() {
                   </>
                 )}
               </button>
-
             </form>
           )}
 
