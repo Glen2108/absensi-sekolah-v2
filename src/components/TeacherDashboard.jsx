@@ -7,7 +7,7 @@ import {
   Power, Users, Search, Download, Lock, KeyRound, 
   LogOut, Trash2, ShieldAlert, Calendar, ArrowUpDown, 
   ChevronLeft, ChevronRight, Filter, CheckCircle2, 
-  Clock, AlertCircle, XCircle, X
+  Clock, AlertCircle, XCircle, X, Table, LayoutList
 } from 'lucide-react';
 
 const DAFTAR_KELAS = [
@@ -23,6 +23,9 @@ export default function TeacherDashboard() {
   const [inputPassword, setInputPassword] = useState('');
   const [loginError, setLoginError] = useState(false);
 
+  // Mode Tampilan Table: 'matrix' (Format Jurnal Excel) atau 'list' (Log Riwayat)
+  const [viewMode, setViewMode] = useState('matrix');
+
   // Data & Sesi
   const [attendanceList, setAttendanceList] = useState([]);
   const [selectedClassFilter, setSelectedClassFilter] = useState('SEMUA');
@@ -32,9 +35,9 @@ export default function TeacherDashboard() {
   const [targetClassInput, setTargetClassInput] = useState('SEMUA');
 
   // State Sorting & Pagination
-  const [sortConfig, setSortConfig] = useState({ key: 'timestamp', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'studentName', direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
 
   // State Toast & Modal Hapus
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -89,7 +92,7 @@ export default function TeacherDashboard() {
       }
     });
 
-    const q = query(collection(db, 'attendance'), orderBy('timestamp', 'desc'));
+    const q = query(collection(db, 'attendance'), orderBy('timestamp', 'asc'));
     const unsubscribeAttendance = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
       setAttendanceList(docs);
@@ -133,13 +136,13 @@ export default function TeacherDashboard() {
     }
   };
 
-  // Daftar Tanggal Unik dari Database
+  // Daftar Tanggal Unik dari Database (Terurut Kronologis)
   const availableDates = useMemo(() => {
     const dates = attendanceList.map((item) => item.date).filter(Boolean);
     return Array.from(new Set(dates));
   }, [attendanceList]);
 
-  // Filter Data
+  // Filter Data Log Biasa
   const filteredData = useMemo(() => {
     return attendanceList.filter((item) => {
       const matchesClass = selectedClassFilter === 'SEMUA' || item.className === selectedClassFilter;
@@ -149,7 +152,74 @@ export default function TeacherDashboard() {
     });
   }, [attendanceList, selectedClassFilter, selectedDateFilter, searchQuery]);
 
-  // Kartu Ringkasan Statistik Dinamis
+  // Transform Data Ke Bentuk MATRIKS SISWA x TANGGAL (Untuk Format Jurnal)
+  const matrixData = useMemo(() => {
+    const datesToInclude = selectedDateFilter === 'SEMUA' 
+      ? availableDates 
+      : availableDates.filter(d => d === selectedDateFilter);
+
+    // Kelompokkan data berdasarkan nama & kelas unik
+    const studentMap = {};
+
+    attendanceList.forEach(item => {
+      if (selectedClassFilter !== 'SEMUA' && item.className !== selectedClassFilter) return;
+      if (searchQuery && !item.studentName?.toLowerCase().includes(searchQuery.toLowerCase())) return;
+
+      const key = `${item.studentName}_${item.className}`;
+      if (!studentMap[key]) {
+        studentMap[key] = {
+          studentName: item.studentName,
+          className: item.className,
+          records: {}
+        };
+      }
+      studentMap[key].records[item.date] = item.status;
+    });
+
+    // Ubah ke array & kalkulasi statistik
+    const studentsArray = Object.values(studentMap).map(student => {
+      let totalHadir = 0;
+      let totalIzin = 0;
+      let totalSakit = 0;
+      let totalAlpa = 0;
+
+      datesToInclude.forEach(dateStr => {
+        const st = student.records[dateStr];
+        if (st === 'Hadir') totalHadir++;
+        else if (st === 'Izin') totalIzin++;
+        else if (st === 'Sakit') totalSakit++;
+        else if (st === 'Alpa') totalAlpa++;
+      });
+
+      const totalPertemuan = datesToInclude.length;
+      const totalHadirValid = totalHadir; 
+      const pctHadir = totalPertemuan > 0 ? Math.round((totalHadirValid / totalPertemuan) * 100) : 0;
+      const pctAlpa = totalPertemuan > 0 ? Math.round((totalAlpa / totalPertemuan) * 100) : 0;
+      const pctIzin = totalPertemuan > 0 ? Math.round((totalIzin / totalPertemuan) * 100) : 0;
+      const pctSakit = totalPertemuan > 0 ? Math.round((totalSakit / totalPertemuan) * 100) : 0;
+
+      // Status Tuntas jika Kehadiran >= 75%
+      const isTuntas = pctHadir >= 75;
+
+      return {
+        ...student,
+        totalHadir,
+        totalIzin,
+        totalSakit,
+        totalAlpa,
+        totalPertemuan,
+        pctHadir,
+        pctIzin,
+        pctSakit,
+        pctAlpa,
+        isTuntas
+      };
+    });
+
+    return { dates: datesToInclude, students: studentsArray };
+  }, [attendanceList, availableDates, selectedClassFilter, selectedDateFilter, searchQuery]);
+
+  // Ringkasan Statistik
   const stats = useMemo(() => {
     const total = filteredData.length;
     const hadir = filteredData.filter((i) => i.status === 'Hadir').length;
@@ -159,7 +229,7 @@ export default function TeacherDashboard() {
     return { total, hadir, izin, sakit, alpa };
   }, [filteredData]);
 
-  // Reset Ke Halaman 1 saat filter berubah
+  // Handlers Filter
   const handleClassFilterChange = (e) => {
     setSelectedClassFilter(e.target.value);
     setCurrentPage(1);
@@ -175,7 +245,7 @@ export default function TeacherDashboard() {
     setCurrentPage(1);
   };
 
-  // Sorting Data
+  // Sorting
   const requestSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -184,82 +254,76 @@ export default function TeacherDashboard() {
     setSortConfig({ key, direction });
   };
 
-  const sortedData = useMemo(() => {
-    let items = [...filteredData];
-    if (sortConfig.key) {
-      items.sort((a, b) => {
-        let aVal = a[sortConfig.key] || '';
-        let bVal = b[sortConfig.key] || '';
-
-        if (sortConfig.key === 'timestamp') {
-          aVal = a.timestamp || 0;
-          bVal = b.timestamp || 0;
-        }
-
-        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
+  // Sorted Data Matriks / List
+  const sortedMatrixStudents = useMemo(() => {
+    let items = [...matrixData.students];
+    items.sort((a, b) => {
+      let aVal = a[sortConfig.key] || '';
+      let bVal = b[sortConfig.key] || '';
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
     return items;
-  }, [filteredData, sortConfig]);
+  }, [matrixData.students, sortConfig]);
 
-  // Pagination Data
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage) || 1;
-  const paginatedData = useMemo(() => {
+  // Pagination Matriks
+  const totalPagesMatrix = Math.ceil(sortedMatrixStudents.length / itemsPerPage) || 1;
+  const paginatedMatrixStudents = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return sortedData.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
+    return sortedMatrixStudents.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedMatrixStudents, currentPage, itemsPerPage]);
 
-  // Export Excel CSV Tingkat Lanjut (Tahap 4)
-  const exportToCSV = () => {
-    if (sortedData.length === 0) {
+  // Export Excel CSV Jurnal Matriks Tipe Excel
+  const exportMatrixCSV = () => {
+    if (matrixData.students.length === 0) {
       return showToast('Tidak ada data yang dapat diekspor!', 'error');
     }
 
     const escapeCsv = (str) => `"${(str || '').toString().replace(/"/g, '""')}"`;
     const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    let csvContent = '\uFEFF'; // Byte Order Mark untuk Microsoft Excel
+    let csvContent = '\uFEFF';
 
-    // Header Laporan Resmi Sekolah
-    csvContent += `LAPORAN REKAPITULASI PRESENSI SISWA\n`;
+    // Header Jurnal Excel
+    csvContent += `LAPORAN JURNAL REKAPITULASI KEHADIRAN SISWA\n`;
     csvContent += `SMA NEGERI 4 MANADO - TAHUN AJARAN 2026/2027\n`;
-    csvContent += `Mata Pelajaran: Informatika | Guru Pengampu: Glendy A. Taawoeda, S.Pd\n`;
-    csvContent += `Filter Kelas: ${selectedClassFilter} | Filter Tanggal: ${selectedDateFilter} | Tanggal Unduh: ${today}\n\n`;
+    csvContent += `Mata Pelajaran: Informatika | Guru: Glendy A. Taawoeda, S.Pd\n`;
+    csvContent += `Filter Kelas: ${selectedClassFilter} | Tanggal Unduh: ${today}\n\n`;
 
-    // Header Kolom Tabel
-    csvContent += `No,Nama Siswa,Kelas,Mata Pelajaran,Guru Pengampu,Status,Catatan,Tanggal Absensi\n`;
+    // Kolom
+    const headerCols = ['NO', 'NAMA SISWA', 'KELAS', ...matrixData.dates, 'JLM HADIR', 'ALPA', 'IZIN', 'SAKIT', 'TOTAL', '% HADIR', 'STATUS KEHADIRAN'];
+    csvContent += headerCols.map(escapeCsv).join(',') + '\n';
 
-    // Baris Data Siswa
-    sortedData.forEach((row, index) => {
-      csvContent += [
-        index + 1,
-        escapeCsv(row.studentName),
-        escapeCsv(row.className),
-        escapeCsv('Informatika'),
-        escapeCsv('Glendy A. Taawoeda, S.Pd'),
-        escapeCsv(row.status),
-        escapeCsv(row.notes),
-        escapeCsv(row.date)
-      ].join(',') + '\n';
+    sortedMatrixStudents.forEach((st, idx) => {
+      const row = [
+        idx + 1,
+        st.studentName,
+        st.className,
+        ...matrixData.dates.map(d => st.records[d] ? (st.records[d] === 'Hadir' ? 'V' : st.records[d].charAt(0)) : '-'),
+        st.totalHadir,
+        st.totalAlpa,
+        st.totalIzin,
+        st.totalSakit,
+        st.totalPertemuan,
+        `${st.pctHadir}%`,
+        st.isTuntas ? 'Tuntas' : 'Tidak Tuntas'
+      ];
+      csvContent += row.map(escapeCsv).join(',') + '\n';
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     
-    const cleanClass = selectedClassFilter.replace(/[^a-zA-Z0-9]/g, '_');
-    const cleanDate = selectedDateFilter.replace(/[^a-zA-Z0-9]/g, '_');
-    
     link.href = url;
-    link.setAttribute('download', `Rekap_Absensi_Informatika_${cleanClass}_${cleanDate}.csv`);
+    link.setAttribute('download', `Jurnal_Absensi_Informatika_${selectedClassFilter}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    showToast(`Berhasil mengekspor ${sortedData.length} data absensi ke file CSV`, 'success');
+    showToast(`Berhasil mengekspor jurnal rekap absensi ke CSV!`, 'success');
   };
 
   if (!isAuthenticated) {
@@ -435,7 +499,7 @@ export default function TeacherDashboard() {
           </div>
           <div>
             <p className="text-[11px] font-semibold text-slate-400">Hadir</p>
-            <p className="text-lg font-bold text-emerald-400">{stats.hadir} <span className="text-xs font-normal text-slate-500">siswa</span></p>
+            <p className="text-lg font-bold text-emerald-400">{stats.hadir} <span className="text-xs font-normal text-slate-500">kali</span></p>
           </div>
         </div>
 
@@ -445,7 +509,7 @@ export default function TeacherDashboard() {
           </div>
           <div>
             <p className="text-[11px] font-semibold text-slate-400">Izin</p>
-            <p className="text-lg font-bold text-amber-400">{stats.izin} <span className="text-xs font-normal text-slate-500">siswa</span></p>
+            <p className="text-lg font-bold text-amber-400">{stats.izin} <span className="text-xs font-normal text-slate-500">kali</span></p>
           </div>
         </div>
 
@@ -455,7 +519,7 @@ export default function TeacherDashboard() {
           </div>
           <div>
             <p className="text-[11px] font-semibold text-slate-400">Sakit</p>
-            <p className="text-lg font-bold text-sky-400">{stats.sakit} <span className="text-xs font-normal text-slate-500">siswa</span></p>
+            <p className="text-lg font-bold text-sky-400">{stats.sakit} <span className="text-xs font-normal text-slate-500">kali</span></p>
           </div>
         </div>
 
@@ -465,12 +529,12 @@ export default function TeacherDashboard() {
           </div>
           <div>
             <p className="text-[11px] font-semibold text-slate-400">Alpa</p>
-            <p className="text-lg font-bold text-rose-400">{stats.alpa} <span className="text-xs font-normal text-slate-500">siswa</span></p>
+            <p className="text-lg font-bold text-rose-400">{stats.alpa} <span className="text-xs font-normal text-slate-500">kali</span></p>
           </div>
         </div>
       </div>
 
-      {/* REKAP TABEL DATA ABSENSI */}
+      {/* REKAP JURNAL PRESENSI SISWA */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -478,18 +542,46 @@ export default function TeacherDashboard() {
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base">Rekapitulasi Presensi Siswa</h3>
-              <p className="text-xs text-slate-400">Total Terfilter: {filteredData.length} siswa (Total Seluruhnya: {attendanceList.length})</p>
+              <h3 className="font-bold text-white text-base">Jurnal Rekapitulasi Presensi Tatap Muka</h3>
+              <p className="text-xs text-slate-400">
+                Total Siswa Terdaftar: {matrixData.students.length} Siswa | {matrixData.dates.length} Pertemuan Tanggal
+              </p>
             </div>
           </div>
 
-          <button
-            onClick={exportToCSV}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 transition-all shrink-0"
-          >
-            <Download className="w-4 h-4 text-sky-400" />
-            <span>Export Excel (CSV)</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Toggle Mode Tampilan */}
+            <div className="flex items-center bg-slate-950 p-1 border border-slate-800 rounded-xl">
+              <button
+                onClick={() => setViewMode('matrix')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'matrix' ? 'bg-sky-500 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Tampilan Matriks Jurnal Excel"
+              >
+                <Table className="w-3.5 h-3.5" />
+                <span>Jurnal Excel</span>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'list' ? 'bg-sky-500 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Tampilan List Log Riwayat"
+              >
+                <LayoutList className="w-3.5 h-3.5" />
+                <span>Riwayat Log</span>
+              </button>
+            </div>
+
+            <button
+              onClick={exportMatrixCSV}
+              className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 transition-all shrink-0"
+            >
+              <Download className="w-4 h-4 text-sky-400" />
+              <span>Export CSV Jurnal</span>
+            </button>
+          </div>
         </div>
 
         {/* Filter Toolbar */}
@@ -526,7 +618,7 @@ export default function TeacherDashboard() {
               onChange={handleDateFilterChange}
               className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
             >
-              <option value="SEMUA">Semua Tanggal Absensi</option>
+              <option value="SEMUA">Semua Pertemuan Tanggal</option>
               {availableDates.map(dateStr => (
                 <option key={dateStr} value={dateStr}>{dateStr}</option>
               ))}
@@ -534,98 +626,205 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        {/* Tabel Data */}
-        <div className="overflow-x-auto rounded-2xl border border-slate-800">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 select-none">
-              <tr>
-                <th className="p-3 w-12 text-center">NO</th>
-                <th 
-                  className="p-3 cursor-pointer hover:text-white transition-colors"
-                  onClick={() => requestSort('studentName')}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>SISWA</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                  </div>
-                </th>
-                <th 
-                  className="p-3 cursor-pointer hover:text-white transition-colors"
-                  onClick={() => requestSort('className')}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>KELAS</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                  </div>
-                </th>
-                <th 
-                  className="p-3 cursor-pointer hover:text-white transition-colors"
-                  onClick={() => requestSort('status')}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>STATUS</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                  </div>
-                </th>
-                <th className="p-3">CATATAN</th>
-                <th 
-                  className="p-3 cursor-pointer hover:text-white transition-colors"
-                  onClick={() => requestSort('timestamp')}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>TANGGAL / WAKTU</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                  </div>
-                </th>
-                <th className="p-3 text-center">AKSI</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-300">
-              {paginatedData.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="p-8 text-center text-slate-500">
-                    Tidak ada data absensi yang sesuai dengan filter.
-                  </td>
+        {/* TAMPILAN 1: FORMAT MATRIKS JURNAL EXCEL */}
+        {viewMode === 'matrix' ? (
+          <div className="overflow-x-auto rounded-2xl border border-slate-800 shadow-inner">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-950 text-slate-300 font-semibold border-b border-slate-800 select-none">
+                {/* Header Baris 1 */}
+                <tr className="divide-x divide-slate-800 text-center border-b border-slate-800">
+                  <th rowSpan="2" className="p-2 w-10">NO</th>
+                  <th rowSpan="2" className="p-2 text-left min-w-[180px]">NAMA SISWA</th>
+                  <th rowSpan="2" className="p-2 w-16">KELAS</th>
+                  <th colSpan={matrixData.dates.length || 1} className="p-2 bg-slate-900/90 text-sky-400">
+                    KEHADIRAN PADA KEGIATAN TATAP MUKA ({matrixData.dates.length} PERTEMUAN)
+                  </th>
+                  <th colSpan="5" className="p-2 bg-slate-900/90 text-amber-400">JUMLAH (JLM)</th>
+                  <th colSpan="4" className="p-2 bg-slate-900/90 text-purple-400">% KEHADIRAN</th>
+                  <th rowSpan="2" className="p-2 min-w-[90px]">NILAI KEHADIRAN</th>
                 </tr>
-              ) : (
-                paginatedData.map((item, index) => (
-                  <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="p-3 text-center font-mono text-slate-500">
-                      {(currentPage - 1) * itemsPerPage + index + 1}
-                    </td>
-                    <td className="p-3 font-semibold text-white">{item.studentName}</td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 bg-slate-800 rounded text-sky-400 font-mono">
-                        {item.className}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                        item.status === 'Hadir' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                        item.status === 'Izin' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                        item.status === 'Sakit' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' :
-                        'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="p-3 text-slate-400 max-w-xs truncate">{item.notes || '-'}</td>
-                    <td className="p-3 text-slate-400">{item.date}</td>
-                    <td className="p-3 text-center">
-                      <button
-                        onClick={() => confirmDeleteAttendance(item.id, item.studentName)}
-                        className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 rounded-lg transition-all"
-                        title="Hapus Data Absensi"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+
+                {/* Header Baris 2: Tanggal Vertikal & Kolom Rekap */}
+                <tr className="divide-x divide-slate-800 text-center text-[10px]">
+                  {matrixData.dates.length === 0 ? (
+                    <th className="p-2 text-slate-500 font-normal">Belum ada data tanggal</th>
+                  ) : (
+                    matrixData.dates.map((dStr, idx) => (
+                      <th key={dStr} className="p-1 min-w-[36px] max-w-[36px] font-mono text-slate-300">
+                        <div className="writing-mode-vertical rotate-180 py-2 inline-block whitespace-nowrap">
+                          {dStr}
+                        </div>
+                      </th>
+                    ))
+                  )}
+
+                  {/* Rekap Jumlah */}
+                  <th className="p-1 bg-emerald-950/40 text-emerald-400 w-8" title="Hadir">✓</th>
+                  <th className="p-1 bg-rose-950/40 text-rose-400 w-8" title="Alpa">A</th>
+                  <th className="p-1 bg-amber-950/40 text-amber-400 w-8" title="Izin">I</th>
+                  <th className="p-1 bg-sky-950/40 text-sky-400 w-8" title="Sakit">S</th>
+                  <th className="p-1 bg-slate-800 text-slate-300 w-9" title="Total">TTL</th>
+
+                  {/* Rekap Persentase */}
+                  <th className="p-1 bg-emerald-950/20 text-emerald-400 w-10">%✓</th>
+                  <th className="p-1 bg-rose-950/20 text-rose-400 w-10">%A</th>
+                  <th className="p-1 bg-amber-950/20 text-amber-400 w-10">%I</th>
+                  <th className="p-1 bg-sky-950/20 text-sky-400 w-10">%S</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                {paginatedMatrixStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={13 + matrixData.dates.length} className="p-8 text-center text-slate-500">
+                      Tidak ada data jurnal absensi yang sesuai filter.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  paginatedMatrixStudents.map((st, index) => (
+                    <tr key={`${st.studentName}_${st.className}`} className="hover:bg-slate-800/40 transition-colors divide-x divide-slate-800/60">
+                      <td className="p-2 text-center font-mono text-slate-500">
+                        {(currentPage - 1) * itemsPerPage + index + 1}
+                      </td>
+                      <td className="p-2 font-semibold text-white">{st.studentName}</td>
+                      <td className="p-2 text-center">
+                        <span className="px-1.5 py-0.5 bg-slate-800 rounded text-[10px] text-sky-400 font-mono">
+                          {st.className}
+                        </span>
+                      </td>
+
+                      {/* Sel Pertemuan Tanggal */}
+                      {matrixData.dates.length === 0 ? (
+                        <td className="p-2 text-center text-slate-600">-</td>
+                      ) : (
+                        matrixData.dates.map((dateStr) => {
+                          const statusVal = st.records[dateStr];
+                          return (
+                            <td key={dateStr} className="p-1 text-center font-bold text-xs">
+                              {statusVal === 'Hadir' && <span className="text-emerald-400">✓</span>}
+                              {statusVal === 'Izin' && <span className="text-amber-400 bg-amber-500/20 px-1 rounded">I</span>}
+                              {statusVal === 'Sakit' && <span className="text-sky-400 bg-sky-500/20 px-1 rounded">S</span>}
+                              {statusVal === 'Alpa' && <span className="text-rose-400 bg-rose-500/20 px-1 rounded">A</span>}
+                              {!statusVal && <span className="text-slate-700 font-normal">-</span>}
+                            </td>
+                          );
+                        })
+                      )}
+
+                      {/* Kolom Total Per Hitungan */}
+                      <td className="p-1.5 text-center font-bold text-emerald-400 bg-emerald-950/10">{st.totalHadir}</td>
+                      <td className="p-1.5 text-center font-bold text-rose-400 bg-rose-950/10">{st.totalAlpa}</td>
+                      <td className="p-1.5 text-center font-bold text-amber-400 bg-amber-950/10">{st.totalIzin}</td>
+                      <td className="p-1.5 text-center font-bold text-sky-400 bg-sky-950/10">{st.totalSakit}</td>
+                      <td className="p-1.5 text-center font-bold text-slate-200 bg-slate-800/40">{st.totalPertemuan}</td>
+
+                      {/* Kolom Persentase */}
+                      <td className="p-1 text-center font-mono text-[11px] text-emerald-300">{st.pctHadir}%</td>
+                      <td className="p-1 text-center font-mono text-[11px] text-rose-300">{st.pctAlpa}%</td>
+                      <td className="p-1 text-center font-mono text-[11px] text-amber-300">{st.pctIzin}%</td>
+                      <td className="p-1 text-center font-mono text-[11px] text-sky-300">{st.pctSakit}%</td>
+
+                      {/* Kolom Nilai / Status Tuntas */}
+                      <td className="p-2 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          st.isTuntas 
+                            ? 'bg-emerald-600 text-white shadow shadow-emerald-900/50' 
+                            : 'bg-rose-600 text-white shadow shadow-rose-900/50'
+                        }`}>
+                          {st.isTuntas ? 'Tuntas' : 'Tidak Tuntas'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+
+        /* TAMPILAN 2: TAMPILAN LIST LOG BIASA */
+          <div className="overflow-x-auto rounded-2xl border border-slate-800">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 select-none">
+                <tr>
+                  <th className="p-3 w-12 text-center">NO</th>
+                  <th 
+                    className="p-3 cursor-pointer hover:text-white transition-colors"
+                    onClick={() => requestSort('studentName')}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>SISWA</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                    </div>
+                  </th>
+                  <th 
+                    className="p-3 cursor-pointer hover:text-white transition-colors"
+                    onClick={() => requestSort('className')}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>KELAS</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                    </div>
+                  </th>
+                  <th 
+                    className="p-3 cursor-pointer hover:text-white transition-colors"
+                    onClick={() => requestSort('status')}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>STATUS</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                    </div>
+                  </th>
+                  <th className="p-3">CATATAN</th>
+                  <th className="p-3">TANGGAL / WAKTU</th>
+                  <th className="p-3 text-center">AKSI</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                {filteredData.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="p-8 text-center text-slate-500">
+                      Tidak ada log absensi yang sesuai.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredData.map((item, index) => (
+                    <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="p-3 text-center font-mono text-slate-500">{index + 1}</td>
+                      <td className="p-3 font-semibold text-white">{item.studentName}</td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 bg-slate-800 rounded text-sky-400 font-mono">
+                          {item.className}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          item.status === 'Hadir' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                          item.status === 'Izin' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                          item.status === 'Sakit' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' :
+                          'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-slate-400 max-w-xs truncate">{item.notes || '-'}</td>
+                      <td className="p-3 text-slate-400">{item.date}</td>
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => confirmDeleteAttendance(item.id, item.studentName)}
+                          className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 rounded-lg transition-all"
+                          title="Hapus Data Absensi"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Kontrol Pagination */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 mt-2">
@@ -639,17 +838,17 @@ export default function TeacherDashboard() {
               }}
               className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-sky-500"
             >
-              <option value={5}>5</option>
               <option value={10}>10</option>
-              <option value={20}>20</option>
+              <option value={15}>15</option>
+              <option value={30}>30</option>
               <option value={50}>50</option>
             </select>
-            <span>data per halaman</span>
+            <span>baris per halaman</span>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-400">
-              Halaman <strong className="text-slate-200">{currentPage}</strong> dari <strong className="text-slate-200">{totalPages}</strong>
+              Halaman <strong className="text-slate-200">{currentPage}</strong> dari <strong className="text-slate-200">{totalPagesMatrix}</strong>
             </span>
 
             <div className="flex items-center gap-1">
@@ -663,8 +862,8 @@ export default function TeacherDashboard() {
               </button>
 
               <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPagesMatrix))}
+                disabled={currentPage === totalPagesMatrix || totalPagesMatrix === 0}
                 className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 title="Halaman Selanjutnya"
               >

@@ -6,3 +6,8 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
+
+/* CSS Teks Vertikal untuk Header Tanggal Jurnal */
+.writing-mode-vertical {
+  writing-mode: vertical-rl;
+}
