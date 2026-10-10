@@ -7,13 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: {
-          800: '#1E293B',
-          900: '#0F172A',
+        skyblue: {
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
         },
-        sky: {
-          500: '#0EA5E9',
-          600: '#0284C7',
+        gold: {
+          300: '#fde047',
+          400: '#facc15',
+          500: '#eab308',
         }
       }
     },
