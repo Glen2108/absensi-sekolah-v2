@@ -301,28 +301,36 @@ export default function TeacherDashboard() {
     showToast(`Berhasil mengekspor jurnal rekap absensi ke CSV!`, 'success');
   };
 
+  /* ========================================================
+     POPUP FORM LOGIN PASSWORD GURU (GOLD-MODERN THEME)
+  ======================================================== */
   if (!isAuthenticated) {
     return (
       <div className="w-full max-w-md mx-auto py-12">
-        <div className="bg-slate-900/90 border border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden text-center">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 via-amber-400 to-indigo-500"></div>
+        <div className="bg-slate-900 border-2 border-amber-400/40 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-amber-500/10 backdrop-blur-xl relative overflow-hidden text-center">
+          
+          {/* Top Gold Glowing Accent Bar */}
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-600"></div>
 
-          <div className="w-16 h-16 bg-amber-400/10 border border-amber-400/30 text-amber-300 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/10">
-            <Lock className="w-8 h-8" />
+          {/* Gold Icon Badge */}
+          <div className="w-16 h-16 bg-gradient-to-tr from-amber-500/20 to-amber-300/10 border border-amber-400/50 text-amber-400 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/20">
+            <Lock className="w-8 h-8 text-amber-400" />
           </div>
 
-          <h2 className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-slate-100 to-amber-300 tracking-tight">
-            Portal Guru Pengampu
+          <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 tracking-tight">
+            PORTAL GURU PENGAMPU
           </h2>
-          <p className="text-xs text-sky-200/80 mt-1">Masukkan password otentikasi untuk mengakses panel kontrol digital.</p>
+          <p className="text-xs text-amber-200/80 mt-1.5 font-medium">
+            Masukkan password otentikasi untuk membuka kontrol absensi digital.
+          </p>
 
           <form onSubmit={handleLogin} className="mt-6 space-y-4 text-left">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-2">
-                Password Guru
+              <label className="block text-xs font-bold uppercase tracking-wider text-amber-300 mb-2">
+                Password Akses Guru
               </label>
               <div className="relative">
-                <KeyRound className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
+                <KeyRound className="w-4 h-4 text-amber-400/70 absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   required
@@ -334,7 +342,7 @@ export default function TeacherDashboard() {
                   }}
                   placeholder="Masukkan password..."
                   className={`w-full bg-slate-950 border rounded-2xl pl-11 pr-4 py-3.5 text-slate-100 text-sm focus:outline-none transition-all ${
-                    loginError ? 'border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-800 focus:border-sky-400'
+                    loginError ? 'border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-800 focus:border-amber-400'
                   }`}
                 />
               </div>
@@ -347,9 +355,9 @@ export default function TeacherDashboard() {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-sky-500 via-sky-600 to-amber-500 hover:from-sky-400 hover:to-amber-400 text-slate-950 font-black py-3.5 rounded-2xl shadow-xl shadow-sky-500/20 transition-all duration-300 active:scale-[0.99] flex items-center justify-center gap-2 uppercase tracking-wide text-xs"
+              className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black py-3.5 rounded-2xl shadow-xl shadow-amber-500/20 transition-all duration-300 active:scale-[0.99] flex items-center justify-center gap-2 uppercase text-xs tracking-wider"
             >
-              <span>Masuk Portal Digital</span>
+              <span>MASUK PORTAL GURU</span>
             </button>
           </form>
         </div>
@@ -362,10 +370,10 @@ export default function TeacherDashboard() {
       
       {/* TOAST NOTIFICATION */}
       {toast.show && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-xl border border-amber-500/30 bg-slate-900/95 text-slate-100 animate-in fade-in slide-in-from-top-3 duration-200">
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-xl border border-amber-400/30 bg-slate-900/95 text-slate-100 animate-in fade-in slide-in-from-top-3 duration-200">
           {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
           {toast.type === 'error' && <XCircle className="w-5 h-5 text-rose-400 shrink-0" />}
-          {toast.type === 'info' && <AlertCircle className="w-5 h-5 text-sky-400 shrink-0" />}
+          {toast.type === 'info' && <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />}
           <span className="text-xs font-semibold">{toast.message}</span>
           <button 
             onClick={() => setToast({ ...toast, show: false })}
@@ -379,7 +387,7 @@ export default function TeacherDashboard() {
       {/* MODAL KONFIRMASI HAPUS */}
       {deleteModal.show && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-amber-500/20 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -409,23 +417,18 @@ export default function TeacherDashboard() {
         </div>
       )}
 
-      {/* WIDGET PENGINGAT JADWAL MENGAJAR GURU (SKY BLUE - GOLD) */}
-      <div className="relative overflow-hidden bg-slate-900/90 border border-amber-500/30 rounded-3xl p-6 shadow-2xl shadow-sky-500/10 backdrop-blur-xl">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      {/* WIDGET JADWAL MENGAJAR GURU (BLUE-GRAY + GOLD MODERN) */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-400 to-amber-400 p-0.5 shadow-lg shadow-sky-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-300">
-                <CalendarDays className="w-5 h-5" />
-              </div>
+            <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-400 flex items-center justify-center shrink-0">
+              <CalendarDays className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-slate-100 to-amber-300 text-base">
-                PENGINGAT JADWAL MENGAJAR
-              </h3>
-              <p className="text-xs text-sky-200/80">Guru Pengampu: Glendy A. Taawoeda, S.Pd</p>
+              <h3 className="font-extrabold text-white text-base">Pengingat Jadwal Mengajar Informatika</h3>
+              <p className="text-xs text-slate-400">Guru Pengampu: Glendy A. Taawoeda, S.Pd</p>
             </div>
           </div>
 
@@ -436,9 +439,9 @@ export default function TeacherDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {JADWAL_GURU.map((item) => (
-            <div key={item.className} className="bg-slate-950/80 border border-sky-500/20 hover:border-amber-400/40 rounded-2xl p-4 space-y-3 transition-all duration-300 shadow-lg group">
+            <div key={item.className} className="bg-slate-950/80 border border-slate-800 hover:border-amber-400/40 rounded-2xl p-4 space-y-3 transition-all duration-300 group">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                <span className="font-extrabold text-sky-400 group-hover:text-amber-300 transition-colors text-sm">
+                <span className="font-extrabold text-slate-200 group-hover:text-amber-400 transition-colors text-sm">
                   Kelas {item.className}
                 </span>
                 <span className="text-[10px] font-mono bg-amber-400/10 text-amber-300 border border-amber-400/20 px-2 py-0.5 rounded-md">
@@ -450,9 +453,9 @@ export default function TeacherDashboard() {
                   <div key={idx} className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/60 text-xs">
                     <div className="flex justify-between font-semibold text-slate-200">
                       <span>{s.day}</span>
-                      <span className="text-amber-300">{s.hours}</span>
+                      <span className="text-amber-400">{s.hours}</span>
                     </div>
-                    <p className="text-[11px] text-sky-300/80 font-mono mt-0.5">{s.time} WITA</p>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">{s.time} WITA</p>
                   </div>
                 ))}
               </div>
@@ -462,16 +465,16 @@ export default function TeacherDashboard() {
       </div>
 
       {/* PANEL KONTROL SESI ABSENSI */}
-      <div className="bg-slate-900/90 border border-sky-500/20 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold px-2.5 py-0.5 bg-amber-400/10 text-amber-300 border border-amber-400/30 rounded-full">
-                Digital Control
+                Portal Guru
               </span>
             </div>
             <h2 className="text-xl font-extrabold text-white mt-1">Kontrol Sesi Absensi Informatika</h2>
-            <p className="text-xs text-sky-200/80">Atur status pembukaan sesi presensi siswa.</p>
+            <p className="text-xs text-slate-400">Atur status pembukaan sesi presensi siswa.</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -479,7 +482,7 @@ export default function TeacherDashboard() {
               value={targetClassInput}
               onChange={(e) => setTargetClassInput(e.target.value)}
               disabled={sessionData.isOpen}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-400"
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
             >
               {DAFTAR_KELAS.map(k => (
                 <option key={k} value={k}>{k === 'SEMUA' ? 'Semua Kelas' : `Kelas ${k}`}</option>
@@ -491,7 +494,7 @@ export default function TeacherDashboard() {
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-extrabold text-xs transition-all shadow-lg ${
                 sessionData.isOpen
                   ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50'
-                  : 'bg-gradient-to-r from-sky-500 to-amber-500 hover:from-sky-400 hover:to-amber-400 text-slate-950 shadow-sky-500/20'
+                  : 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 shadow-amber-500/20'
               }`}
             >
               <Power className="w-4 h-4" />
@@ -516,13 +519,13 @@ export default function TeacherDashboard() {
               Status Sesi: {sessionData.isOpen ? <span className="text-amber-300">DIBUKA ({sessionData.targetClass})</span> : <span className="text-slate-400">DITUTUP</span>}
             </span>
           </div>
-          <span className="text-sky-300/80 text-[11px]">SMA N 4 Manado — Informatika</span>
+          <span className="text-slate-500 text-[11px]">SMA N 4 Manado — Informatika</span>
         </div>
       </div>
 
       {/* KARTU STATISTIK RINGKASAN PRESENSI */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg backdrop-blur-xl">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg backdrop-blur-xl">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-5 h-5" />
           </div>
@@ -532,7 +535,7 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        <div className="bg-slate-900/90 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg backdrop-blur-xl">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg backdrop-blur-xl">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
             <Clock className="w-5 h-5" />
           </div>
@@ -542,7 +545,7 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        <div className="bg-slate-900/90 border border-sky-500/20 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg backdrop-blur-xl">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg backdrop-blur-xl">
           <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
             <AlertCircle className="w-5 h-5" />
           </div>
@@ -552,7 +555,7 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        <div className="bg-slate-900/90 border border-rose-500/20 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg backdrop-blur-xl">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg backdrop-blur-xl">
           <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
             <XCircle className="w-5 h-5" />
           </div>
@@ -564,15 +567,15 @@ export default function TeacherDashboard() {
       </div>
 
       {/* REKAP JURNAL PRESENSI SISWA */}
-      <div className="bg-slate-900/90 border border-sky-500/20 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 text-amber-300 flex items-center justify-center">
               <Users className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-white text-base">Jurnal Rekapitulasi Presensi Tatap Muka</h3>
-              <p className="text-xs text-sky-200/80">
+              <p className="text-xs text-slate-400">
                 Total Siswa Terdaftar: {matrixData.students.length} Siswa | {matrixData.dates.length} Pertemuan Tanggal
               </p>
             </div>
@@ -583,7 +586,7 @@ export default function TeacherDashboard() {
               <button
                 onClick={() => setViewMode('matrix')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  viewMode === 'matrix' ? 'bg-gradient-to-r from-sky-500 to-amber-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                  viewMode === 'matrix' ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
                 }`}
                 title="Tampilan Matriks Jurnal Excel"
               >
@@ -593,7 +596,7 @@ export default function TeacherDashboard() {
               <button
                 onClick={() => setViewMode('list')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  viewMode === 'list' ? 'bg-gradient-to-r from-sky-500 to-amber-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                  viewMode === 'list' ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
                 }`}
                 title="Tampilan List Log Riwayat"
               >
@@ -621,7 +624,7 @@ export default function TeacherDashboard() {
               placeholder="Cari nama siswa..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-400 transition-colors"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 transition-colors"
             />
           </div>
 
@@ -630,7 +633,7 @@ export default function TeacherDashboard() {
             <select
               value={selectedClassFilter}
               onChange={handleClassFilterChange}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-400 transition-colors"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 transition-colors"
             >
               <option value="SEMUA">Semua Kelas</option>
               {DAFTAR_KELAS.filter(k => k !== 'SEMUA').map(k => (
@@ -640,11 +643,11 @@ export default function TeacherDashboard() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-sky-400 shrink-0" />
+            <Calendar className="w-4 h-4 text-amber-300 shrink-0" />
             <select
               value={selectedDateFilter}
               onChange={handleDateFilterChange}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-400 transition-colors"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 transition-colors"
             >
               <option value="SEMUA">Semua Pertemuan Tanggal</option>
               {availableDates.map(dateStr => (
@@ -663,11 +666,11 @@ export default function TeacherDashboard() {
                   <th rowSpan="2" className="p-2 w-10">NO</th>
                   <th rowSpan="2" className="p-2 text-left min-w-[180px]">NAMA SISWA</th>
                   <th rowSpan="2" className="p-2 w-16">KELAS</th>
-                  <th colSpan={matrixData.dates.length || 1} className="p-2 bg-slate-900/90 text-sky-400">
+                  <th colSpan={matrixData.dates.length || 1} className="p-2 bg-slate-900/90 text-amber-300">
                     KEHADIRAN PADA KEGIATAN TATAP MUKA ({matrixData.dates.length} PERTEMUAN)
                   </th>
-                  <th colSpan="5" className="p-2 bg-slate-900/90 text-amber-300">JUMLAH (JLM)</th>
-                  <th colSpan="4" className="p-2 bg-slate-900/90 text-purple-400">% KEHADIRAN</th>
+                  <th colSpan="5" className="p-2 bg-slate-900/90 text-amber-400">JUMLAH (JLM)</th>
+                  <th colSpan="4" className="p-2 bg-slate-900/90 text-amber-200">% KEHADIRAN</th>
                   <th rowSpan="2" className="p-2 min-w-[90px]">NILAI KEHADIRAN</th>
                 </tr>
 
@@ -712,7 +715,7 @@ export default function TeacherDashboard() {
                       </td>
                       <td className="p-2 font-semibold text-white">{st.studentName}</td>
                       <td className="p-2 text-center">
-                        <span className="px-1.5 py-0.5 bg-slate-800 rounded text-[10px] text-sky-400 font-mono">
+                        <span className="px-1.5 py-0.5 bg-slate-800 rounded text-[10px] text-amber-300 font-mono">
                           {st.className}
                         </span>
                       </td>
@@ -812,7 +815,7 @@ export default function TeacherDashboard() {
                       <td className="p-3 text-center font-mono text-slate-500">{index + 1}</td>
                       <td className="p-3 font-semibold text-white">{item.studentName}</td>
                       <td className="p-3">
-                        <span className="px-2 py-0.5 bg-slate-800 rounded text-sky-400 font-mono">
+                        <span className="px-2 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">
                           {item.className}
                         </span>
                       </td>
@@ -845,7 +848,7 @@ export default function TeacherDashboard() {
           </div>
         )}
 
-        {/* Kontrol Pagination */}
+        {/* Pagination */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 mt-2">
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <span>Tampilkan</span>
@@ -855,7 +858,7 @@ export default function TeacherDashboard() {
                 setItemsPerPage(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-sky-400"
+              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-amber-400"
             >
               <option value={10}>10</option>
               <option value={15}>15</option>

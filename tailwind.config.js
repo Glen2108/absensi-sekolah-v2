@@ -7,15 +7,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        skyblue: {
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-        },
         gold: {
           300: '#fde047',
           400: '#facc15',
           500: '#eab308',
+          600: '#ca8a04',
+        },
+        steel: {
+          800: '#1e293b',
+          900: '#0f172a',
+          950: '#020617',
         }
       }
     },

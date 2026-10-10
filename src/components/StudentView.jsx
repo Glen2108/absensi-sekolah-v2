@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, addDoc, doc, onSnapshot } from 'firebase/firestore';
 import { 
   UserCheck, Edit3, CheckCircle2, User, Send, 
-  AlertCircle, Clock, ArrowRight, Lock, Radio, CalendarDays, Sparkles
+  AlertCircle, Clock, ArrowRight, Lock, Radio, CalendarDays
 } from 'lucide-react';
 import { JADWAL_GURU } from '../data/schedule';
 
@@ -120,8 +120,8 @@ export default function StudentView() {
     <div className="w-full max-w-xl mx-auto space-y-4">
       
       {!isSaved ? (
-        <div className="bg-slate-900/90 border border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 via-amber-400 to-indigo-500"></div>
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-slate-700 via-amber-400 to-amber-500"></div>
 
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-800">
             <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 text-amber-300 flex items-center justify-center shrink-0">
@@ -129,13 +129,13 @@ export default function StudentView() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">Identitas Siswa Digital</h2>
-              <p className="text-xs text-sky-200/80 mt-0.5">SMA Negeri 4 Manado — Informatika</p>
+              <p className="text-xs text-slate-400 mt-0.5">SMA Negeri 4 Manado — Informatika</p>
             </div>
           </div>
 
           <form onSubmit={handleSaveProfile} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300 mb-2">
                 Nama Lengkap Siswa
               </label>
               <input
@@ -144,19 +144,19 @@ export default function StudentView() {
                 value={studentInfo.name}
                 onChange={(e) => setStudentInfo({ ...studentInfo, name: e.target.value })}
                 placeholder="Contoh: Hizkia Wenas"
-                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-400"
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-amber-400"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300 mb-2">
                 Pilih Kelas
               </label>
               <select
                 required
                 value={studentInfo.className}
                 onChange={(e) => setStudentInfo({ ...studentInfo, className: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-sky-400 cursor-pointer"
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-amber-400 cursor-pointer"
               >
                 <option value="">-- Pilih Kelas --</option>
                 <optgroup label="Kelas X">
@@ -179,7 +179,7 @@ export default function StudentView() {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-sky-500 via-sky-600 to-amber-500 hover:from-sky-400 hover:to-amber-400 text-slate-950 font-black py-4 rounded-2xl shadow-lg shadow-sky-500/20 transition-all flex items-center justify-center gap-2 uppercase text-xs"
+              className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black py-4 rounded-2xl shadow-lg shadow-amber-500/10 transition-all flex items-center justify-center gap-2 uppercase text-xs"
             >
               <span>Simpan & Masuk Halaman Absensi</span>
               <ArrowRight className="w-4 h-4" />
@@ -188,13 +188,13 @@ export default function StudentView() {
         </div>
       ) : (
 
-        <div className="bg-slate-900/90 border border-sky-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 via-amber-400 to-indigo-500"></div>
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-slate-700 via-amber-400 to-amber-500"></div>
 
           {/* Header Identitas Siswa */}
           <div className="flex items-center justify-between pb-6 border-b border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-400 to-amber-400 p-0.5 shadow-md shadow-sky-500/20">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-700 via-amber-400 to-amber-500 p-0.5 shadow-md shadow-amber-500/10">
                 <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-300 font-extrabold text-lg">
                   {studentInfo.name ? studentInfo.name.charAt(0).toUpperCase() : 'S'}
                 </div>
@@ -206,7 +206,7 @@ export default function StudentView() {
                     Siswa Aktif
                   </span>
                 </h2>
-                <p className="text-xs text-sky-400 font-semibold">Kelas {studentInfo.className} — Informatika</p>
+                <p className="text-xs text-amber-400 font-semibold">Kelas {studentInfo.className} — Informatika</p>
               </div>
             </div>
 
@@ -221,10 +221,10 @@ export default function StudentView() {
 
           {/* WIDGET JADWAL SISWA */}
           {classSchedule && (
-            <div className="mt-5 p-4 bg-slate-950/80 border border-amber-500/20 rounded-2xl space-y-2">
+            <div className="mt-5 p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
-                  <CalendarDays className="w-4 h-4 text-sky-400" />
+                  <CalendarDays className="w-4 h-4 text-amber-400" />
                   <span>JADWAL KELAS {studentInfo.className}</span>
                 </div>
                 <span className="text-[10px] bg-amber-400/10 text-amber-300 px-2 py-0.5 rounded-full font-mono border border-amber-400/20">
@@ -235,7 +235,7 @@ export default function StudentView() {
                 {classSchedule.schedules.map((s, idx) => (
                   <div key={idx} className="flex items-center justify-between bg-slate-900/90 px-3 py-2 rounded-xl text-xs">
                     <span className="font-semibold text-white">{s.day} ({s.hours})</span>
-                    <span className="text-sky-300/80 font-mono text-[11px]">{s.time} WITA</span>
+                    <span className="text-slate-400 font-mono text-[11px]">{s.time} WITA</span>
                   </div>
                 ))}
               </div>
@@ -248,13 +248,13 @@ export default function StudentView() {
                 <Lock className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-bold text-white">Sesi Absensi Belum Dibuka</h3>
-              <p className="text-xs text-sky-200/80 max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
                 Guru Pengampu <strong className="text-amber-300">Glendy A. Taawoeda, S.Pd</strong> belum membuka sesi absensi untuk mata pelajaran Informatika.
               </p>
             </div>
           ) : !isClassEligible ? (
             <div className="py-10 text-center space-y-4">
-              <div className="w-16 h-16 bg-sky-500/10 border border-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-amber-400/10 border border-amber-400/20 text-amber-300 rounded-2xl flex items-center justify-center mx-auto">
                 <Radio className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-bold text-white">Sesi Khusus Kelas {sessionData.targetClass}</h3>
@@ -290,7 +290,7 @@ export default function StudentView() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-3">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300 mb-3">
                   Status Kehadiran Hari Ini
                 </label>
                 <div className="grid grid-cols-3 gap-3">
@@ -325,7 +325,7 @@ export default function StudentView() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300 mb-2">
                   Catatan / Keterangan <span className="text-slate-500 font-normal lowercase">(opsional)</span>
                 </label>
                 <textarea
@@ -333,14 +333,14 @@ export default function StudentView() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Tuliskan alasan jika Izin/Sakit..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-slate-100 text-sm focus:outline-none focus:border-sky-400 resize-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-slate-100 text-sm focus:outline-none focus:border-amber-400 resize-none"
                 ></textarea>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-sky-500 via-sky-600 to-amber-500 hover:from-sky-400 hover:to-amber-400 text-slate-950 font-black py-4 rounded-2xl shadow-xl shadow-sky-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 uppercase text-xs"
+                className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black py-4 rounded-2xl shadow-xl shadow-amber-500/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 uppercase text-xs"
               >
                 {loading ? (
                   <span>Mengirim Presensi...</span>
