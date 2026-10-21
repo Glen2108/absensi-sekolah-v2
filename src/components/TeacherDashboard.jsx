@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { 
-  collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc 
-} from 'firebase/firestore';
+import { query, collection, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { 
   Power, Users, Search, Download, Lock, KeyRound, 
   LogOut, Trash2, ShieldAlert, Calendar, ArrowUpDown, 
@@ -86,7 +84,11 @@ export default function TeacherDashboard() {
       }
     });
 
-    const q = query(collection(db, 'attendance'), orderBy('timestamp', 'asc'));
+    const q = query(
+      collection(db, 'attendance'), 
+      orderBy('timestamp', 'desc'), 
+      limit(200) // Batasi 200 data terbaru saja
+    );
     const unsubscribeAttendance = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
       setAttendanceList(docs);

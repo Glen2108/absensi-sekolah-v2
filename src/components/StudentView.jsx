@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, doc, onSnapshot, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, doc, onSnapshot, getDocs, query, where, limit } from 'firebase/firestore';
 import { 
   UserCheck, Edit3, CheckCircle2, User, Send, 
   AlertCircle, Clock, ArrowRight, Lock, Radio, CalendarDays,
@@ -15,7 +15,6 @@ const DAFTAR_KELAS = [
   'XII-1', 'XII-2', 'XII-3', 'XII-4', 'XII-5'
 ];
 
-// Fungsi Helper untuk Otomatis Mengubah Setiap Kata Menjadi Huruf Kapital Diawal
 const capitalizeName = (str) => {
   if (!str) return '';
   return str.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -54,7 +53,6 @@ export default function StudentView() {
     return () => unsubscribe();
   }, []);
 
-  // Cek Fitur Ingat Saya (localStorage vs sessionStorage)
   useEffect(() => {
     const savedLocal = localStorage.getItem('absensi_student_profile');
     const savedSession = sessionStorage.getItem('absensi_student_profile');
@@ -80,13 +78,13 @@ export default function StudentView() {
 
   const greetingData = useMemo(() => {
     if (currentHour >= 5 && currentHour < 11) {
-      return { text: 'Selamat Pagi', icon: Sun, color: 'text-amber-300', bg: 'bg-amber-400/10 border-amber-400/30', animate: 'animate-[spin_10s_linear_infinite]' };
+      return { text: 'Selamat Pagi', icon: Sun, color: 'text-amber-300', bg: 'bg-amber-400/10 border-amber-400/30' };
     } else if (currentHour >= 11 && currentHour < 15) {
-      return { text: 'Selamat Siang', icon: Sun, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30', animate: 'animate-pulse' };
+      return { text: 'Selamat Siang', icon: Sun, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30' };
     } else if (currentHour >= 15 && currentHour < 18.5) {
-      return { text: 'Selamat Sore', icon: Sunset, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/30', animate: 'animate-bounce' };
+      return { text: 'Selamat Sore', icon: Sunset, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/30' };
     } else {
-      return { text: 'Selamat Malam', icon: MoonStar, color: 'text-indigo-300', bg: 'bg-indigo-500/10 border-indigo-500/30', animate: 'animate-pulse' };
+      return { text: 'Selamat Malam', icon: MoonStar, color: 'text-indigo-300', bg: 'bg-indigo-500/10 border-indigo-500/30' };
     }
   }, [currentHour]);
 
@@ -102,12 +100,10 @@ export default function StudentView() {
     return { tag: 'Semangat Belajar', icon: Sparkles, quote: 'Jadikan setiap detik pembelajaran Informatika sebagai langkah menuju masa depan cemerlang.', color: 'from-amber-400/10 via-slate-900 to-slate-900 border-slate-800 text-slate-300' };
   }, [studentInfo.className]);
 
-  // Handle Perubahan Input Nama + Auto Capitalize
   const handleNameChange = (e) => {
     const rawVal = e.target.value;
-    // Mempertahankan spasi yang sedang diketik pengguna
     const formattedVal = rawVal.replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
-  setStudentInfo({ ...studentInfo, name: formattedVal });
+    setStudentInfo({ ...studentInfo, name: formattedVal });
   };
 
   const handleSaveProfile = async (e) => {
@@ -122,15 +118,15 @@ export default function StudentView() {
     setCheckingDuplicate(true);
 
     try {
-      // 1. Cek Duplikat Nama di Firestore
-      const snapshot = await getDocs(collection(db, 'attendance'));
-      const existingRecords = snapshot.docs.map(doc => doc.data());
+      // Optimasi: Hanya query nama siswa spesifik (maksimal 5 dokumen) untuk efisiensi memori & kecepatan
+      const q = query(
+        collection(db, 'attendance'),
+        where('studentName', '==', cleanName),
+        limit(5)
+      );
+      const snapshot = await getDocs(q);
       
-      const duplicateFound = existingRecords.find(item => {
-        const existingNameClean = (item.studentName || '').toLowerCase().trim();
-        const inputNameClean = cleanName.toLowerCase().trim();
-        return existingNameClean === inputNameClean && item.className !== studentInfo.className;
-      });
+      const duplicateFound = snapshot.docs.map(doc => doc.data()).find(item => item.className !== studentInfo.className);
 
       if (duplicateFound) {
         await dialog.alert(
@@ -141,7 +137,6 @@ export default function StudentView() {
         return;
       }
 
-      // 2. Simpan Sesuai Pilihan Fitur "Ingat Saya"
       const profileData = { name: cleanName, className: studentInfo.className };
       
       if (rememberMe) {
@@ -228,7 +223,7 @@ export default function StudentView() {
   return (
     <div className="w-full max-w-xl mx-auto space-y-4">
       {!isSaved ? (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+        <div className="bg-slate-900/95 border border-slate-800 rounded-3xl p-6 sm:p-8 backdrop-blur-sm relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-slate-700 via-amber-400 to-amber-500"></div>
 
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-800">
@@ -288,7 +283,6 @@ export default function StudentView() {
               </select>
             </div>
 
-            {/* Fitur Ingat Saya */}
             <div className="flex items-center gap-3 p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
               <input
                 type="checkbox"
@@ -306,7 +300,7 @@ export default function StudentView() {
             <button
               type="submit"
               disabled={checkingDuplicate}
-              className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black py-4 rounded-2xl shadow-lg shadow-amber-500/10 transition-all flex items-center justify-center gap-2 uppercase text-xs disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black py-4 rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 uppercase text-xs disabled:opacity-50"
             >
               <span>{checkingDuplicate ? 'Memeriksa Data...' : 'Simpan & Masuk Halaman Absensi'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -314,12 +308,12 @@ export default function StudentView() {
           </form>
         </div>
       ) : (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+        <div className="bg-slate-900/95 border border-slate-800 rounded-3xl p-6 sm:p-8 backdrop-blur-sm relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-slate-700 via-amber-400 to-amber-500"></div>
 
           <div className="flex items-center justify-between pb-5 border-b border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-700 via-amber-400 to-amber-500 p-0.5 shadow-md shadow-amber-500/10 shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-700 via-amber-400 to-amber-500 p-0.5 shrink-0">
                 <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-300 font-extrabold text-lg">
                   {studentInfo.name ? studentInfo.name.charAt(0).toUpperCase() : 'S'}
                 </div>
@@ -327,7 +321,7 @@ export default function StudentView() {
               <div>
                 <div className="flex items-center gap-2 mb-0.5">
                   <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${greetingData.bg} ${greetingData.color}`}>
-                    <GreetingIcon className={`w-3.5 h-3.5 ${greetingData.animate}`} />
+                    <GreetingIcon className="w-3.5 h-3.5" />
                     <span>{greetingData.text}, {studentInfo.name.split(' ')[0]}!</span>
                   </div>
                 </div>
@@ -381,7 +375,7 @@ export default function StudentView() {
 
           {!sessionData.isOpen ? (
             <div className="py-10 text-center space-y-4">
-              <div className="w-16 h-16 bg-amber-400/10 border border-amber-400/20 text-amber-300 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-amber-500/10">
+              <div className="w-16 h-16 bg-amber-400/10 border border-amber-400/20 text-amber-300 rounded-2xl flex items-center justify-center mx-auto">
                 <Lock className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-bold text-white">Sesi Absensi Belum Dibuka</h3>
@@ -401,7 +395,7 @@ export default function StudentView() {
             </div>
           ) : submittedToday ? (
             <div className="py-10 text-center space-y-4">
-              <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-950/50">
+              <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-3xl flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
               <div>
@@ -418,7 +412,6 @@ export default function StudentView() {
             <form onSubmit={handleSubmitAttendance} className="mt-6 space-y-6">
               <div className="p-3 bg-amber-400/10 border border-amber-400/20 rounded-2xl flex items-center gap-3">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400"></span>
                 </span>
                 <p className="text-xs text-amber-300 font-medium">
@@ -477,7 +470,7 @@ export default function StudentView() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black py-4 rounded-2xl shadow-xl shadow-amber-500/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 uppercase text-xs"
+                className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 uppercase text-xs"
               >
                 {loading ? (
                   <span>Mengirim Presensi...</span>
