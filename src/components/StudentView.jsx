@@ -255,7 +255,7 @@ export default function StudentView() {
                 required
                 value={studentInfo.name}
                 onChange={handleNameChange}
-                placeholder="Contoh: Prince Risar Taawoeda"
+                placeholder="Contoh: Adam Kelapa Sawit"
                 className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-amber-400"
               />
               <p className="text-[11px] text-slate-400 mt-1.5 italic">
