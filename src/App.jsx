@@ -90,3 +90,20 @@ export default function App() {
     </div>
   );
 }
+
+export default function App() {
+  return (
+    <div 
+      className="min-h-screen bg-slate-950 text-slate-100 bg-cover bg-center bg-fixed relative"
+      style={{ backgroundImage: "url('/bg-school.jpg')" }}
+    >
+      {/* Overlay Gelap Transparan agar Teks Tetap Jelad Dibaca */}
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm pointer-events-none"></div>
+
+      {/* Konten Utama Aplikasi */}
+      <div className="relative z-10">
+        {/* Komponen Header, StudentView, TeacherDashboard, dll */}
+      </div>
+    </div>
+  );
+}
