@@ -19,10 +19,18 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative overflow-hidden font-sans">
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-slate-700/20 rounded-full blur-[140px] pointer-events-none animate-pulse"></div>
-      <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div 
+      className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative overflow-x-hidden font-sans bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: "url('/bg-school.png')" }}
+    >
+      {/* Overlay Gelap Transparan agar Teks Tetap Jelas & Kontras */}
+      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm pointer-events-none z-0"></div>
 
+      {/* Efek Glow Gradasi Tambahan */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-slate-700/20 rounded-full blur-[140px] pointer-events-none animate-pulse z-0"></div>
+      <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+      {/* Header Aplikasi */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/90 border-b border-slate-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -77,33 +85,18 @@ export default function App() {
         </div>
       </header>
 
+      {/* Konten Utama */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center relative z-10">
         {view === 'student' ? <StudentView /> : <TeacherDashboard />}
       </main>
 
+      {/* Footer */}
       <footer className="border-t border-slate-800 bg-slate-950/90 backdrop-blur-md relative z-10 py-5 text-xs text-slate-500">
         <div className="max-w-6xl mx-auto px-4 text-center sm:flex sm:justify-between sm:text-left">
           <p>© 2026 Informatika SMA Negeri 4 Manado — Guru Pengampu: Glendy A. Taawoeda, S.Pd</p>
           <p className="mt-2 sm:mt-0 text-amber-400/80 font-medium">Tahun Ajaran 2026/2027</p>
         </div>
       </footer>
-    </div>
-  );
-}
-
-export default function App() {
-  return (
-    <div 
-      className="min-h-screen bg-slate-950 text-slate-100 bg-cover bg-center bg-fixed relative"
-      style={{ backgroundImage: "url('/bg-school.png')" }}
-    >
-      {/* Overlay Gelap Transparan agar Teks Tetap Jelad Dibaca */}
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm pointer-events-none"></div>
-
-      {/* Konten Utama Aplikasi */}
-      <div className="relative z-10">
-        {/* Komponen Header, StudentView, TeacherDashboard, dll */}
-      </div>
     </div>
   );
 }
