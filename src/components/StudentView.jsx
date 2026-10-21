@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, doc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, doc, onSnapshot, getDocs, query, where } from 'firebase/firestore';
 import { 
   UserCheck, Edit3, CheckCircle2, User, Send, 
   AlertCircle, Clock, ArrowRight, Lock, Radio, CalendarDays,
-  Sun, Sunset, MoonStar, Sparkles, Flame, Trophy, Compass
+  Sun, Sunset, MoonStar, Sparkles, Flame, Trophy, Compass, Save
 } from 'lucide-react';
 import { JADWAL_GURU } from '../data/schedule.js';
 import { useDialog } from '../context/DialogContext.jsx';
@@ -15,14 +15,27 @@ const DAFTAR_KELAS = [
   'XII-1', 'XII-2', 'XII-3', 'XII-4', 'XII-5'
 ];
 
+// Fungsi Helper untuk Otomatis Mengubah Setiap Kata Menjadi Huruf Kapital Diawal
+const capitalizeName = (str) => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .filter(word => word.length > 0)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 export default function StudentView() {
   const dialog = useDialog();
 
   const [studentInfo, setStudentInfo] = useState({ name: '', className: '' });
+  const [rememberMe, setRememberMe] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [status, setStatus] = useState('Hadir');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
   const [submittedToday, setSubmittedToday] = useState(false);
   
   const [sessionData, setSessionData] = useState({ isOpen: false, targetClass: 'SEMUA', sessionTitle: '' });
@@ -46,8 +59,12 @@ export default function StudentView() {
     return () => unsubscribe();
   }, []);
 
+  // Cek Fitur Ingat Saya (localStorage vs sessionStorage)
   useEffect(() => {
-    const savedProfile = localStorage.getItem('absensi_student_profile');
+    const savedLocal = localStorage.getItem('absensi_student_profile');
+    const savedSession = sessionStorage.getItem('absensi_student_profile');
+    const savedProfile = savedLocal || savedSession;
+
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile);
@@ -56,7 +73,7 @@ export default function StudentView() {
           setIsSaved(true);
 
           const todayKey = `absen_done_${parsed.name}_${parsed.className}_${new Date().toLocaleDateString('id-ID')}`;
-          if (localStorage.getItem(todayKey)) {
+          if (localStorage.getItem(todayKey) || sessionStorage.getItem(todayKey)) {
             setSubmittedToday(true);
           }
         }
@@ -90,18 +107,66 @@ export default function StudentView() {
     return { tag: 'Semangat Belajar', icon: Sparkles, quote: 'Jadikan setiap detik pembelajaran Informatika sebagai langkah menuju masa depan cemerlang.', color: 'from-amber-400/10 via-slate-900 to-slate-900 border-slate-800 text-slate-300' };
   }, [studentInfo.className]);
 
+  // Handle Perubahan Input Nama + Auto Capitalize
+  const handleNameChange = (e) => {
+    const rawVal = e.target.value;
+    const formattedVal = capitalizeName(rawVal);
+    setStudentInfo({ ...studentInfo, name: formattedVal });
+  };
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    if (!studentInfo.name.trim() || !studentInfo.className) {
+    const cleanName = capitalizeName(studentInfo.name.trim());
+
+    if (!cleanName || !studentInfo.className) {
       await dialog.alert('Silakan isi Nama Lengkap dan Pilih Kelas!', 'Peringatan');
       return;
     }
-    localStorage.setItem('absensi_student_profile', JSON.stringify(studentInfo));
-    setIsSaved(true);
 
-    const todayKey = `absen_done_${studentInfo.name}_${studentInfo.className}_${new Date().toLocaleDateString('id-ID')}`;
-    if (localStorage.getItem(todayKey)) {
-      setSubmittedToday(true);
+    setCheckingDuplicate(true);
+
+    try {
+      // 1. Cek Duplikat Nama di Firestore
+      const snapshot = await getDocs(collection(db, 'attendance'));
+      const existingRecords = snapshot.docs.map(doc => doc.data());
+      
+      const duplicateFound = existingRecords.find(item => {
+        const existingNameClean = (item.studentName || '').toLowerCase().trim();
+        const inputNameClean = cleanName.toLowerCase().trim();
+        return existingNameClean === inputNameClean && item.className !== studentInfo.className;
+      });
+
+      if (duplicateFound) {
+        await dialog.alert(
+          `Nama "${cleanName}" sudah pernah terdaftar di ${duplicateFound.className}. Mohon periksa kembali penulisan nama atau pilihan kelas Anda!`,
+          'Deteksi Nama Duplikat'
+        );
+        setCheckingDuplicate(false);
+        return;
+      }
+
+      // 2. Simpan Sesuai Pilihan Fitur "Ingat Saya"
+      const profileData = { name: cleanName, className: studentInfo.className };
+      
+      if (rememberMe) {
+        localStorage.setItem('absensi_student_profile', JSON.stringify(profileData));
+        sessionStorage.removeItem('absensi_student_profile');
+      } else {
+        sessionStorage.setItem('absensi_student_profile', JSON.stringify(profileData));
+        localStorage.removeItem('absensi_student_profile');
+      }
+
+      setStudentInfo(profileData);
+      setIsSaved(true);
+
+      const todayKey = `absen_done_${cleanName}_${studentInfo.className}_${new Date().toLocaleDateString('id-ID')}`;
+      if (localStorage.getItem(todayKey) || sessionStorage.getItem(todayKey)) {
+        setSubmittedToday(true);
+      }
+    } catch (err) {
+      console.error('Validation error:', err);
+    } finally {
+      setCheckingDuplicate(false);
     }
   };
 
@@ -109,6 +174,7 @@ export default function StudentView() {
     const yakin = await dialog.confirm('Apakah Anda yakin ingin mengganti identitas siswa di perangkat ini?', 'Konfirmasi Ganti Profil');
     if (yakin) {
       localStorage.removeItem('absensi_student_profile');
+      sessionStorage.removeItem('absensi_student_profile');
       setStudentInfo({ name: '', className: '' });
       setIsSaved(false);
       setSubmittedToday(false);
@@ -140,7 +206,11 @@ export default function StudentView() {
       await addDoc(collection(db, 'attendance'), payload);
       
       const todayKey = `absen_done_${studentInfo.name}_${studentInfo.className}_${new Date().toLocaleDateString('id-ID')}`;
-      localStorage.setItem(todayKey, 'true');
+      if (rememberMe) {
+        localStorage.setItem(todayKey, 'true');
+      } else {
+        sessionStorage.setItem(todayKey, 'true');
+      }
 
       setSubmittedToday(true);
       setNotes('');
@@ -184,10 +254,13 @@ export default function StudentView() {
                 type="text"
                 required
                 value={studentInfo.name}
-                onChange={(e) => setStudentInfo({ ...studentInfo, name: e.target.value })}
-                placeholder="Contoh: Hizkia Wenas"
+                onChange={handleNameChange}
+                placeholder="Contoh: Prince Risar Taawoeda"
                 className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-slate-100 text-sm focus:outline-none focus:border-amber-400"
               />
+              <p className="text-[11px] text-slate-400 mt-1.5 italic">
+                *Sistem otomatis memperbaiki format huruf kapital diawal kata.
+              </p>
             </div>
 
             <div>
@@ -219,11 +292,27 @@ export default function StudentView() {
               </select>
             </div>
 
+            {/* Fitur Ingat Saya */}
+            <div className="flex items-center gap-3 p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 accent-amber-400 rounded cursor-pointer"
+              />
+              <label htmlFor="rememberMe" className="text-xs text-slate-300 font-medium cursor-pointer flex items-center gap-1.5">
+                <Save className="w-3.5 h-3.5 text-amber-400" />
+                Ingat Saya di Perangkat Ini (Tidak perlu isi nama lagi)
+              </label>
+            </div>
+
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black py-4 rounded-2xl shadow-lg shadow-amber-500/10 transition-all flex items-center justify-center gap-2 uppercase text-xs"
+              disabled={checkingDuplicate}
+              className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black py-4 rounded-2xl shadow-lg shadow-amber-500/10 transition-all flex items-center justify-center gap-2 uppercase text-xs disabled:opacity-50"
             >
-              <span>Simpan & Masuk Halaman Absensi</span>
+              <span>{checkingDuplicate ? 'Memeriksa Data...' : 'Simpan & Masuk Halaman Absensi'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
