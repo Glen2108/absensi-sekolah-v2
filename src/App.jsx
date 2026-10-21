@@ -95,7 +95,7 @@ export default function App() {
   return (
     <div 
       className="min-h-screen bg-slate-950 text-slate-100 bg-cover bg-center bg-fixed relative"
-      style={{ backgroundImage: "url('/bg-school.jpg')" }}
+      style={{ backgroundImage: "url('/bg-school.png')" }}
     >
       {/* Overlay Gelap Transparan agar Teks Tetap Jelad Dibaca */}
       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm pointer-events-none"></div>
