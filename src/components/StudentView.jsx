@@ -18,12 +18,7 @@ const DAFTAR_KELAS = [
 // Fungsi Helper untuk Otomatis Mengubah Setiap Kata Menjadi Huruf Kapital Diawal
 const capitalizeName = (str) => {
   if (!str) return '';
-  return str
-    .toLowerCase()
-    .split(' ')
-    .filter(word => word.length > 0)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 export default function StudentView() {
@@ -110,8 +105,9 @@ export default function StudentView() {
   // Handle Perubahan Input Nama + Auto Capitalize
   const handleNameChange = (e) => {
     const rawVal = e.target.value;
-    const formattedVal = capitalizeName(rawVal);
-    setStudentInfo({ ...studentInfo, name: formattedVal });
+    // Mempertahankan spasi yang sedang diketik pengguna
+    const formattedVal = rawVal.replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+  setStudentInfo({ ...studentInfo, name: formattedVal });
   };
 
   const handleSaveProfile = async (e) => {
