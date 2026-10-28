@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { doc, collection, query, orderBy, onSnapshot, setDoc, limit, deleteDoc } from 'firebase/firestore';
+// Hapus 'limit' dari import
+import { doc, collection, query, orderBy, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
 import { 
   Power, Users, Search, Download, Lock, KeyRound, 
   LogOut, Trash2, ShieldAlert, Calendar, ArrowUpDown, 
   ChevronLeft, ChevronRight, Filter, CheckCircle2, 
-  Clock, AlertCircle, XCircle, X, Table, LayoutList,
-  CalendarDays, Sparkles
+  Clock, AlertCircle, XCircle, X, Table, LayoutList
 } from 'lucide-react';
-import { JADWAL_GURU } from '../data/schedule.js';
 import { useDialog } from '../context/DialogContext.jsx';
 
 const DAFTAR_KELAS = [
@@ -25,7 +24,6 @@ export default function TeacherDashboard() {
   const [inputPassword, setInputPassword] = useState('');
   const [loginError, setLoginError] = useState(false);
 
-  // Default view diubah ke list agar lebih aman saat pertama kali dimuat
   const [viewMode, setViewMode] = useState('list'); 
 
   const [attendanceList, setAttendanceList] = useState([]);
@@ -91,7 +89,8 @@ export default function TeacherDashboard() {
       }
     });
 
-    const q = query(collection(db, 'attendance'), orderBy('timestamp', 'desc'), limit(200));
+    // Perbaikan: Hapus pemanggilan limit(200) agar tidak terjadi ReferenceError
+    const q = query(collection(db, 'attendance'), orderBy('timestamp', 'desc'));
     const unsubscribeAttendance = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
       setAttendanceList(docs || []);
