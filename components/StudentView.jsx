@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, doc, onSnapshot, getDocs, query, where, limit } from 'firebase/firestore';
+import { collection, addDoc, doc, onSnapshot, orderBy, getDocs, query, where, limit } from 'firebase/firestore';
 import { 
   UserCheck, Edit3, CheckCircle2, User, Send, 
   AlertCircle, Clock, ArrowRight, Lock, Radio, CalendarDays,
@@ -53,7 +53,7 @@ export default function StudentView() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
+    useEffect(() => {
     const savedLocal = localStorage.getItem('absensi_student_profile');
     const savedSession = sessionStorage.getItem('absensi_student_profile');
     const savedProfile = savedLocal || savedSession;
@@ -65,7 +65,11 @@ export default function StudentView() {
           setStudentInfo(parsed);
           setIsSaved(true);
 
-          const todayKey = `absen_done_${parsed.name}_${parsed.className}_${new Date().toLocaleDateString('id-ID')}`;
+          // PERBAIKAN: Penulisan dateString dan pengecekan status absen hari ini
+          const today = new Date();
+          const dateString = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+          const todayKey = `absen_done_${parsed.name}_${parsed.className}_${dateString}`;
+          
           if (localStorage.getItem(todayKey) || sessionStorage.getItem(todayKey)) {
             setSubmittedToday(true);
           }

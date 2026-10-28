@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-// Tambahkan 'doc' di dalam baris import ini
-import { doc, collection, query, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, onSnapshot, setDoc, limit, deleteDoc } from 'firebase/firestore';
 import { 
   Power, Users, Search, Download, Lock, KeyRound, 
   LogOut, Trash2, ShieldAlert, Calendar, ArrowUpDown, 
@@ -77,22 +76,25 @@ export default function TeacherDashboard() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    // Aman: Menambahkan proteksi jika data tidak utuh dari Firestore
     const unsubscribeSession = onSnapshot(doc(db, 'settings', 'active_session'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setSessionData(data);
-        if (data.targetClass) setTargetClassInput(data.targetClass);
+        if (data) {
+          setSessionData({
+            isOpen: data.isOpen || false,
+            targetClass: data.targetClass || 'SEMUA',
+            openedAt: data.openedAt || Date.now()
+          });
+          if (data.targetClass) setTargetClassInput(data.targetClass);
+        }
       }
     });
 
-    const q = query(
-      collection(db, 'attendance'), 
-      orderBy('timestamp', 'desc'), 
-      limit(200)
-    );
+    const q = query(collection(db, 'attendance'), orderBy('timestamp', 'desc'), limit(200));
     const unsubscribeAttendance = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-      setAttendanceList(docs);
+      setAttendanceList(docs || []);
     });
 
     return () => {
@@ -115,6 +117,7 @@ export default function TeacherDashboard() {
   };
 
   const handleDeleteAttendance = async (id, studentName) => {
+    if (!dialog) return; // Mencegah crash jika context tidak terdeteksi
     const yakin = await dialog.confirm(`Apakah Anda yakin ingin menghapus data absensi milik "${studentName}"?`, 'Konfirmasi Hapus');
     if (!yakin) return;
 
@@ -127,12 +130,13 @@ export default function TeacherDashboard() {
   };
 
   const availableDates = useMemo(() => {
+    if (!attendanceList) return [];
     const dates = attendanceList.map((item) => item.date).filter(Boolean);
     return Array.from(new Set(dates));
   }, [attendanceList]);
 
-  // FIX: Mengamankan fungsi filter dari resiko 'undefined.includes'
   const filteredData = useMemo(() => {
+    if (!attendanceList) return [];
     return attendanceList.filter((item) => {
       const matchesClass = selectedClassFilter === 'SEMUA' || item.className === selectedClassFilter;
       const matchesDate = selectedDateFilter === 'SEMUA' || item.date === selectedDateFilter;
@@ -144,7 +148,6 @@ export default function TeacherDashboard() {
     });
   }, [attendanceList, selectedClassFilter, selectedDateFilter, searchQuery]);
 
-  // FIX: Mengamankan fungsi pembentukan matrix
   const matrixData = useMemo(() => {
     const datesToInclude = selectedDateFilter === 'SEMUA' 
       ? availableDates 
@@ -152,7 +155,7 @@ export default function TeacherDashboard() {
 
     const studentMap = {};
 
-    attendanceList.forEach(item => {
+    (attendanceList || []).forEach(item => {
       if (selectedClassFilter !== 'SEMUA' && item.className !== selectedClassFilter) return;
       
       const safeNameLower = item.studentName ? String(item.studentName).toLowerCase() : '';
@@ -246,8 +249,8 @@ export default function TeacherDashboard() {
     setSortConfig({ key, direction });
   };
 
-  // FIX: Memperbaiki logika perbandingan agar nilai 0 tidak dianggap string kosong
   const sortedMatrixStudents = useMemo(() => {
+    if (!matrixData || !matrixData.students) return [];
     let items = [...matrixData.students];
     items.sort((a, b) => {
       let aVal = a[sortConfig.key] !== undefined ? a[sortConfig.key] : '';
@@ -258,16 +261,16 @@ export default function TeacherDashboard() {
       return 0;
     });
     return items;
-  }, [matrixData.students, sortConfig]);
+  }, [matrixData, sortConfig]);
 
-  const totalPagesMatrix = Math.ceil(sortedMatrixStudents.length / itemsPerPage) || 1;
+  const totalPagesMatrix = Math.ceil((sortedMatrixStudents?.length || 0) / itemsPerPage) || 1;
   const paginatedMatrixStudents = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return sortedMatrixStudents.slice(startIndex, startIndex + itemsPerPage);
   }, [sortedMatrixStudents, currentPage, itemsPerPage]);
 
   const exportMatrixCSV = () => {
-    if (matrixData.students.length === 0) {
+    if (!matrixData || matrixData.students.length === 0) {
       return showToast('Tidak ada data yang dapat diekspor!', 'error');
     }
 
@@ -281,15 +284,16 @@ export default function TeacherDashboard() {
     csvContent += `Mata Pelajaran: Informatika | Guru: Glendy A. Taawoeda, S.Pd\n`;
     csvContent += `Filter Kelas: ${selectedClassFilter} | Tanggal Unduh: ${today}\n\n`;
 
-    const headerCols = ['NO', 'NAMA SISWA', 'KELAS', ...matrixData.dates, 'JLM HADIR', 'ALPA', 'IZIN', 'SAKIT', 'TOTAL', '% HADIR', 'STATUS KEHADIRAN'];
+    const headerCols = ['NO', 'NAMA SISWA', 'KELAS', ...(matrixData.dates || []), 'JLM HADIR', 'ALPA', 'IZIN', 'SAKIT', 'TOTAL', '% HADIR', 'STATUS KEHADIRAN'];
     csvContent += headerCols.map(escapeCsv).join(',') + '\n';
 
     sortedMatrixStudents.forEach((st, idx) => {
+      // Aman: Menggunakan String() untuk menghindari error manipulasi data kosong
       const row = [
         idx + 1,
         st.studentName,
         st.className,
-        ...matrixData.dates.map(d => st.records[d] ? (st.records[d] === 'Hadir' ? 'V' : st.records[d].charAt(0)) : '-'),
+        ...(matrixData.dates || []).map(d => st.records[d] ? (st.records[d] === 'Hadir' ? 'V' : String(st.records[d]).charAt(0)) : '-'),
         st.totalHadir,
         st.totalAlpa,
         st.totalIzin,
@@ -410,24 +414,25 @@ export default function TeacherDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {JADWAL_GURU?.map((item) => (
-            <div key={item.className} className="bg-slate-950/80 border border-slate-800 hover:border-amber-400/40 rounded-2xl p-4 space-y-3 transition-all duration-300 group">
+          {/* Aman: Menggunakan Array.isArray dan optional chaining agar tidak error saat meloop array import */}
+          {(Array.isArray(JADWAL_GURU) ? JADWAL_GURU : []).map((item, index) => (
+            <div key={item?.className || index} className="bg-slate-950/80 border border-slate-800 hover:border-amber-400/40 rounded-2xl p-4 space-y-3 transition-all duration-300 group">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
                 <span className="font-extrabold text-slate-200 group-hover:text-amber-400 transition-colors text-sm">
-                  Kelas {item.className}
+                  Kelas {item?.className || '-'}
                 </span>
                 <span className="text-[10px] font-mono bg-amber-400/10 text-amber-300 border border-amber-400/20 px-2 py-0.5 rounded-md">
-                  {item.totalJP}
+                  {item?.totalJP || '-'}
                 </span>
               </div>
               <div className="space-y-2">
-                {item.schedules.map((s, idx) => (
+                {(Array.isArray(item?.schedules) ? item.schedules : []).map((s, idx) => (
                   <div key={idx} className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/60 text-xs">
                     <div className="flex justify-between font-semibold text-slate-200">
-                      <span>{s.day}</span>
-                      <span className="text-amber-400">{s.hours}</span>
+                      <span>{s?.day || '-'}</span>
+                      <span className="text-amber-400">{s?.hours || '-'}</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">{s.time} WITA</p>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">{s?.time || '-'} WITA</p>
                   </div>
                 ))}
               </div>
@@ -452,7 +457,7 @@ export default function TeacherDashboard() {
             <select
               value={targetClassInput}
               onChange={(e) => setTargetClassInput(e.target.value)}
-              disabled={sessionData.isOpen}
+              disabled={sessionData?.isOpen}
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
             >
               {DAFTAR_KELAS.map(k => (
@@ -463,13 +468,13 @@ export default function TeacherDashboard() {
             <button
               onClick={toggleSession}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-extrabold text-xs transition-all shadow-lg ${
-                sessionData.isOpen
+                sessionData?.isOpen
                   ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50'
                   : 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 shadow-amber-500/20'
               }`}
             >
               <Power className="w-4 h-4" />
-              <span>{sessionData.isOpen ? 'TUTUP SESI ABSENSI' : 'BUKA SESI ABSENSI'}</span>
+              <span>{sessionData?.isOpen ? 'TUTUP SESI ABSENSI' : 'BUKA SESI ABSENSI'}</span>
             </button>
 
             <button
@@ -485,9 +490,9 @@ export default function TeacherDashboard() {
 
         <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${sessionData.isOpen ? 'bg-amber-400 animate-ping' : 'bg-slate-600'}`}></span>
+            <span className={`w-2.5 h-2.5 rounded-full ${sessionData?.isOpen ? 'bg-amber-400 animate-ping' : 'bg-slate-600'}`}></span>
             <span className="text-slate-300 font-semibold">
-              Status Sesi: {sessionData.isOpen ? <span className="text-amber-300">DIBUKA ({sessionData.targetClass})</span> : <span className="text-slate-400">DITUTUP</span>}
+              Status Sesi: {sessionData?.isOpen ? <span className="text-amber-300">DIBUKA ({sessionData?.targetClass})</span> : <span className="text-slate-400">DITUTUP</span>}
             </span>
           </div>
           <span className="text-slate-500 text-[11px]">SMA N 4 Manado — Informatika</span>
@@ -545,7 +550,7 @@ export default function TeacherDashboard() {
             <div>
               <h3 className="font-bold text-white text-base">Jurnal Rekapitulasi Presensi Tatap Muka</h3>
               <p className="text-xs text-slate-400">
-                Total Siswa Terdaftar: {matrixData.students.length} Siswa | {matrixData.dates.length} Pertemuan Tanggal
+                Total Siswa Terdaftar: {matrixData?.students?.length || 0} Siswa | {matrixData?.dates?.length || 0} Pertemuan Tanggal
               </p>
             </div>
           </div>
@@ -633,95 +638,98 @@ export default function TeacherDashboard() {
                   <th rowSpan="2" className="p-2 w-10">NO</th>
                   <th rowSpan="2" className="p-2 text-left min-w-[180px]">NAMA SISWA</th>
                   <th rowSpan="2" className="p-2 w-16">KELAS</th>
-                  <th colSpan={matrixData.dates.length || 1} className="p-2 bg-slate-900/90 text-amber-300">
-                    KEHADIRAN PADA KEGIATAN TATAP MUKA ({matrixData.dates.length} PERTEMUAN)
+                  <th colSpan={(matrixData?.dates?.length) || 1} className="p-2 bg-slate-900/90 text-amber-300">
+                    KEHADIRAN PERTEMUAN TANGGAL
                   </th>
-                  <th colSpan="5" className="p-2 bg-slate-900/90 text-amber-400">JUMLAH (JLM)</th>
-                  <th colSpan="4" className="p-2 bg-slate-900/90 text-amber-200">% KEHADIRAN</th>
-                  <th rowSpan="2" className="p-2 min-w-[90px]">NILAI KEHADIRAN</th>
+                  <th colSpan="5" className="p-2 bg-slate-900/50">REKAPITULASI (REKAP)</th>
                 </tr>
-
                 <tr className="divide-x divide-slate-800 text-center text-[10px]">
-                  {matrixData.dates.length === 0 ? (
-                    <th className="p-2 text-slate-500 font-normal">Belum ada data tanggal</th>
+                  {(!matrixData?.dates || matrixData.dates.length === 0) ? (
+                     <th className="p-2 bg-slate-900/50 text-slate-500 font-normal">Belum ada tgl</th>
                   ) : (
                     matrixData.dates.map((dStr) => (
-                      <th key={dStr} className="p-1 min-w-[36px] max-w-[36px] font-mono text-slate-300">
-                        <div className="writing-mode-vertical rotate-180 py-2 inline-block whitespace-nowrap">
+                      <th key={dStr} className="p-1 bg-slate-900/50 align-bottom min-w-[32px] w-[32px] max-w-[32px] whitespace-nowrap overflow-hidden">
+                        <div className="writing-mode-vertical rotate-180 py-2 inline-block whitespace-nowrap overflow-visible">
                           {dStr}
                         </div>
                       </th>
                     ))
                   )}
-
-                  <th className="p-1 bg-emerald-950/40 text-emerald-400 w-8" title="Hadir">✓</th>
-                  <th className="p-1 bg-rose-950/40 text-rose-400 w-8" title="Alpa">A</th>
-                  <th className="p-1 bg-amber-950/40 text-amber-300 w-8" title="Izin">I</th>
-                  <th className="p-1 bg-sky-950/40 text-sky-400 w-8" title="Sakit">S</th>
-                  <th className="p-1 bg-slate-800 text-slate-300 w-9" title="Total">TTL</th>
-
-                  <th className="p-1 bg-emerald-950/20 text-emerald-400 w-10">%✓</th>
-                  <th className="p-1 bg-rose-950/20 text-rose-400 w-10">%A</th>
-                  <th className="p-1 bg-amber-950/20 text-amber-300 w-10">%I</th>
-                  <th className="p-1 bg-sky-950/20 text-sky-400 w-10">%S</th>
+                  
+                  <th className="p-2 bg-slate-900/30 cursor-pointer hover:bg-slate-800 transition-colors w-12" onClick={() => requestSort('totalHadir')}>
+                    <div className="flex items-center justify-center gap-1">
+                      HADIR {sortConfig.key === 'totalHadir' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                    </div>
+                  </th>
+                  <th className="p-2 bg-slate-900/30 cursor-pointer hover:bg-slate-800 transition-colors w-12" onClick={() => requestSort('totalAlpa')}>
+                    <div className="flex items-center justify-center gap-1">
+                      ALPA {sortConfig.key === 'totalAlpa' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                    </div>
+                  </th>
+                  <th className="p-2 bg-slate-900/30 cursor-pointer hover:bg-slate-800 transition-colors w-12" onClick={() => requestSort('totalIzin')}>
+                    <div className="flex items-center justify-center gap-1">
+                      IZIN {sortConfig.key === 'totalIzin' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                    </div>
+                  </th>
+                  <th className="p-2 bg-slate-900/30 cursor-pointer hover:bg-slate-800 transition-colors w-12" onClick={() => requestSort('totalSakit')}>
+                    <div className="flex items-center justify-center gap-1">
+                      SAKIT {sortConfig.key === 'totalSakit' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                    </div>
+                  </th>
+                  <th className="p-2 bg-slate-900/30 cursor-pointer hover:bg-slate-800 transition-colors w-16" onClick={() => requestSort('pctHadir')}>
+                    <div className="flex items-center justify-center gap-1">
+                      % HADIR {sortConfig.key === 'pctHadir' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                    </div>
+                  </th>
                 </tr>
               </thead>
-
-              <tbody className="divide-y divide-slate-800/80 text-slate-300">
-                {paginatedMatrixStudents.length === 0 ? (
+              <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+                {(!paginatedMatrixStudents || paginatedMatrixStudents.length === 0) ? (
                   <tr>
-                    <td colSpan={13 + matrixData.dates.length} className="p-8 text-center text-slate-500">
+                    <td colSpan={13 + ((matrixData?.dates?.length) || 0)} className="p-8 text-center text-slate-500">
                       Tidak ada data jurnal absensi yang sesuai filter.
                     </td>
                   </tr>
                 ) : (
                   paginatedMatrixStudents.map((st, index) => (
-                    <tr key={`${st.studentName}_${st.className}`} className="hover:bg-slate-800/40 transition-colors divide-x divide-slate-800/60">
-                      <td className="p-2 text-center font-mono text-slate-500">
+                    <tr key={`${st.studentName}_${st.className}_${index}`} className="hover:bg-slate-800/40 transition-colors divide-x divide-slate-800/40 group">
+                      <td className="p-2 text-center text-slate-400 font-mono">
                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
-                      <td className="p-2 font-semibold text-white">{st.studentName}</td>
+                      <td className="p-2 text-slate-200 font-semibold group-hover:text-amber-300 transition-colors">
+                        {st.studentName}
+                      </td>
                       <td className="p-2 text-center">
                         <span className="px-1.5 py-0.5 bg-slate-800 rounded text-[10px] text-amber-300 font-mono">
                           {st.className}
                         </span>
                       </td>
 
-                      {matrixData.dates.length === 0 ? (
-                        <td className="p-2 text-center text-slate-600">-</td>
+                      {(!matrixData?.dates || matrixData.dates.length === 0) ? (
+                         <td className="p-2 text-center text-slate-700">-</td>
                       ) : (
                         matrixData.dates.map((dateStr) => {
-                          const statusVal = st.records[dateStr];
+                          const statusVal = st.records ? st.records[dateStr] : null;
                           return (
-                            <td key={dateStr} className="p-1 text-center font-bold text-xs">
-                              {statusVal === 'Hadir' && <span className="text-emerald-400">✓</span>}
-                              {statusVal === 'Izin' && <span className="text-amber-300 bg-amber-500/20 px-1 rounded">I</span>}
-                              {statusVal === 'Sakit' && <span className="text-sky-400 bg-sky-500/20 px-1 rounded">S</span>}
-                              {statusVal === 'Alpa' && <span className="text-rose-400 bg-rose-500/20 px-1 rounded">A</span>}
+                            <td key={dateStr} className="p-0 text-center align-middle relative h-full">
                               {!statusVal && <span className="text-slate-700 font-normal">-</span>}
+                              {statusVal === 'Hadir' && <span className="text-emerald-400 font-bold block w-full h-full p-1.5 bg-emerald-500/5">V</span>}
+                              {statusVal === 'Izin' && <span className="text-amber-400 font-bold block w-full h-full p-1.5 bg-amber-500/5">I</span>}
+                              {statusVal === 'Sakit' && <span className="text-sky-400 font-bold block w-full h-full p-1.5 bg-sky-500/5">S</span>}
+                              {statusVal === 'Alpa' && <span className="text-rose-500 font-bold block w-full h-full p-1.5 bg-rose-500/5">A</span>}
                             </td>
                           );
                         })
                       )}
 
-                      <td className="p-1.5 text-center font-bold text-emerald-400 bg-emerald-950/10">{st.totalHadir}</td>
-                      <td className="p-1.5 text-center font-bold text-rose-400 bg-rose-950/10">{st.totalAlpa}</td>
-                      <td className="p-1.5 text-center font-bold text-amber-300 bg-amber-950/10">{st.totalIzin}</td>
-                      <td className="p-1.5 text-center font-bold text-sky-400 bg-sky-950/10">{st.totalSakit}</td>
-                      <td className="p-1.5 text-center font-bold text-slate-200 bg-slate-800/40">{st.totalPertemuan}</td>
-
-                      <td className="p-1 text-center font-mono text-[11px] text-emerald-300">{st.pctHadir}%</td>
-                      <td className="p-1 text-center font-mono text-[11px] text-rose-300">{st.pctAlpa}%</td>
-                      <td className="p-1 text-center font-mono text-[11px] text-amber-300">{st.pctIzin}%</td>
-                      <td className="p-1 text-center font-mono text-[11px] text-sky-300">{st.pctSakit}%</td>
-
-                      <td className="p-2 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
-                          st.isTuntas 
-                            ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow shadow-emerald-900/50' 
-                            : 'bg-rose-600 text-white shadow shadow-rose-900/50'
-                        }`}>
-                          {st.isTuntas ? 'Tuntas' : 'Tidak Tuntas'}
+                      <td className="p-2 text-center font-bold text-emerald-400 bg-slate-900/20">{st.totalHadir}</td>
+                      <td className="p-2 text-center font-bold text-rose-400 bg-slate-900/20">{st.totalAlpa}</td>
+                      <td className="p-2 text-center font-bold text-amber-400 bg-slate-900/20">{st.totalIzin}</td>
+                      <td className="p-2 text-center font-bold text-sky-400 bg-slate-900/20">{st.totalSakit}</td>
+                      
+                      <td className="p-2 text-center bg-slate-900/20">
+                        <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${st.isTuntas ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                          {st.pctHadir}%
                         </span>
                       </td>
                     </tr>
@@ -731,79 +739,58 @@ export default function TeacherDashboard() {
             </table>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-slate-800">
+          <div className="overflow-x-auto rounded-2xl border border-slate-800 shadow-inner">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 select-none">
+              <thead className="bg-slate-950 text-slate-300 font-semibold border-b border-slate-800">
                 <tr>
-                  <th className="p-3 w-12 text-center">NO</th>
-                  <th 
-                    className="p-3 cursor-pointer hover:text-white transition-colors"
-                    onClick={() => requestSort('studentName')}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>SISWA</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                    </div>
-                  </th>
-                  <th 
-                    className="p-3 cursor-pointer hover:text-white transition-colors"
-                    onClick={() => requestSort('className')}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>KELAS</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                    </div>
-                  </th>
-                  <th 
-                    className="p-3 cursor-pointer hover:text-white transition-colors"
-                    onClick={() => requestSort('status')}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>STATUS</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                    </div>
-                  </th>
-                  <th className="p-3">CATATAN</th>
-                  <th className="p-3">TANGGAL / WAKTU</th>
-                  <th className="p-3 text-center">AKSI</th>
+                  <th className="p-3 w-12 text-center">No</th>
+                  <th className="p-3">Tanggal Waktu (Log)</th>
+                  <th className="p-3">Nama Siswa</th>
+                  <th className="p-3">Kelas</th>
+                  <th className="p-3 text-center">Status Jurnal</th>
+                  <th className="p-3">Catatan Siswa</th>
+                  <th className="p-3 text-center">Aksi Guru</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-300">
+              <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
                 {filteredData.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="p-8 text-center text-slate-500">
-                      Tidak ada log absensi yang sesuai.
+                      Tidak ada data riwayat absensi yang ditemukan.
                     </td>
                   </tr>
                 ) : (
-                  filteredData.map((item, index) => (
-                    <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-3 text-center font-mono text-slate-500">{index + 1}</td>
-                      <td className="p-3 font-semibold text-white">{item.studentName || 'Tanpa Nama'}</td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">
-                          {item.className || '-'}
-                        </span>
+                  filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item, index) => (
+                    <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
+                      <td className="p-3 text-center text-slate-400 font-mono">
+                        {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
                       <td className="p-3">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                          item.status === 'Hadir' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                          item.status === 'Izin' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' :
-                          item.status === 'Sakit' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' :
-                          'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                        }`}>
+                        <p className="text-slate-200 font-medium">{item.date || '-'}</p>
+                        <p className="text-[10px] text-slate-500 font-mono">{item.time || '-'}</p>
+                      </td>
+                      <td className="p-3 font-semibold text-slate-200">{item.studentName || 'Tanpa Nama'}</td>
+                      <td className="p-3 text-amber-300 font-mono text-[11px]">{item.className || '-'}</td>
+                      <td className="p-3 text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1 shadow-sm
+                          ${item.status === 'Hadir' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : ''}
+                          ${item.status === 'Izin' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : ''}
+                          ${item.status === 'Sakit' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' : ''}
+                          ${item.status === 'Alpa' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : ''}
+                        `}>
                           {item.status}
                         </span>
                       </td>
-                      <td className="p-3 text-slate-400 max-w-xs truncate">{item.notes || '-'}</td>
-                      <td className="p-3 text-slate-400">{item.date}</td>
+                      <td className="p-3 text-slate-400 italic max-w-[200px] truncate" title={item.notes || '-'}>
+                        {item.notes || '-'}
+                      </td>
                       <td className="p-3 text-center">
                         <button
                           onClick={() => handleDeleteAttendance(item.id, item.studentName)}
-                          className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 rounded-lg transition-all"
-                          title="Hapus Data Absensi"
+                          className="p-1.5 bg-slate-950 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-lg border border-slate-800 hover:border-rose-500/30 transition-all"
+                          title="Hapus Data Ini"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
@@ -814,52 +801,34 @@ export default function TeacherDashboard() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 mt-2">
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span>Tampilkan</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-amber-400"
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={30}>30</option>
-              <option value={50}>50</option>
-            </select>
-            <span>baris per halaman</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400">
-              Halaman <strong className="text-slate-200">{currentPage}</strong> dari <strong className="text-slate-200">{totalPagesMatrix}</strong>
-            </span>
-
-            <div className="flex items-center gap-1">
+        {totalPagesMatrix > 1 && (
+          <div className="flex items-center justify-between mt-6 px-2">
+            <p className="text-[11px] text-slate-500">
+              Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, (viewMode === 'matrix' ? sortedMatrixStudents.length : filteredData.length))} dari total {viewMode === 'matrix' ? sortedMatrixStudents.length : filteredData.length} data
+            </p>
+            <div className="flex gap-1.5">
               <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                title="Halaman Sebelumnya"
+                className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
+              
+              <span className="px-3 py-1.5 text-xs font-semibold text-slate-300 bg-slate-950 border border-slate-800 rounded-lg">
+                Halaman {currentPage} / {totalPagesMatrix}
+              </span>
 
               <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPagesMatrix))}
-                disabled={currentPage === totalPagesMatrix || totalPagesMatrix === 0}
-                className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                title="Halaman Selanjutnya"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPagesMatrix))}
+                disabled={currentPage === totalPagesMatrix}
+                className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
-        </div>
-
+        )}
       </div>
     </div>
   );
