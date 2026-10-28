@@ -87,7 +87,7 @@ export default function TeacherDashboard() {
     const q = query(
       collection(db, 'attendance'), 
       orderBy('timestamp', 'desc'), 
-      limit(200) // Batasi 200 data terbaru saja
+      limit(200)
     );
     const unsubscribeAttendance = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
@@ -130,15 +130,20 @@ export default function TeacherDashboard() {
     return Array.from(new Set(dates));
   }, [attendanceList]);
 
+  // FIX: Mengamankan fungsi filter dari resiko 'undefined.includes'
   const filteredData = useMemo(() => {
     return attendanceList.filter((item) => {
       const matchesClass = selectedClassFilter === 'SEMUA' || item.className === selectedClassFilter;
       const matchesDate = selectedDateFilter === 'SEMUA' || item.date === selectedDateFilter;
-      const matchesSearch = !searchQuery || item.studentName?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const safeName = item.studentName ? String(item.studentName).toLowerCase() : '';
+      const matchesSearch = !searchQuery || safeName.includes(searchQuery.toLowerCase());
+      
       return matchesClass && matchesDate && matchesSearch;
     });
   }, [attendanceList, selectedClassFilter, selectedDateFilter, searchQuery]);
 
+  // FIX: Mengamankan fungsi pembentukan matrix
   const matrixData = useMemo(() => {
     const datesToInclude = selectedDateFilter === 'SEMUA' 
       ? availableDates 
@@ -148,17 +153,24 @@ export default function TeacherDashboard() {
 
     attendanceList.forEach(item => {
       if (selectedClassFilter !== 'SEMUA' && item.className !== selectedClassFilter) return;
-      if (searchQuery && !item.studentName?.toLowerCase().includes(searchQuery.toLowerCase())) return;
+      
+      const safeNameLower = item.studentName ? String(item.studentName).toLowerCase() : '';
+      if (searchQuery && !safeNameLower.includes(searchQuery.toLowerCase())) return;
 
-      const key = `${item.studentName}_${item.className}`;
+      const displayStudentName = item.studentName || 'Tanpa Nama';
+      const displayClassName = item.className || 'Tidak Diketahui';
+      const key = `${displayStudentName}_${displayClassName}`;
+      
       if (!studentMap[key]) {
         studentMap[key] = {
-          studentName: item.studentName,
-          className: item.className,
+          studentName: displayStudentName,
+          className: displayClassName,
           records: {}
         };
       }
-      studentMap[key].records[item.date] = item.status;
+      if (item.date) {
+        studentMap[key].records[item.date] = item.status;
+      }
     });
 
     const studentsArray = Object.values(studentMap).map(student => {
@@ -233,11 +245,13 @@ export default function TeacherDashboard() {
     setSortConfig({ key, direction });
   };
 
+  // FIX: Memperbaiki logika perbandingan agar nilai 0 tidak dianggap string kosong
   const sortedMatrixStudents = useMemo(() => {
     let items = [...matrixData.students];
     items.sort((a, b) => {
-      let aVal = a[sortConfig.key] || '';
-      let bVal = b[sortConfig.key] || '';
+      let aVal = a[sortConfig.key] !== undefined ? a[sortConfig.key] : '';
+      let bVal = b[sortConfig.key] !== undefined ? b[sortConfig.key] : '';
+      
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
@@ -395,7 +409,7 @@ export default function TeacherDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {JADWAL_GURU.map((item) => (
+          {JADWAL_GURU?.map((item) => (
             <div key={item.className} className="bg-slate-950/80 border border-slate-800 hover:border-amber-400/40 rounded-2xl p-4 space-y-3 transition-all duration-300 group">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
                 <span className="font-extrabold text-slate-200 group-hover:text-amber-400 transition-colors text-sm">
@@ -764,10 +778,10 @@ export default function TeacherDashboard() {
                   filteredData.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="p-3 text-center font-mono text-slate-500">{index + 1}</td>
-                      <td className="p-3 font-semibold text-white">{item.studentName}</td>
+                      <td className="p-3 font-semibold text-white">{item.studentName || 'Tanpa Nama'}</td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">
-                          {item.className}
+                          {item.className || '-'}
                         </span>
                       </td>
                       <td className="p-3">
