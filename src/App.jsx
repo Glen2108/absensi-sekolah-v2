@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 import StudentView from './components/StudentView';
 import TeacherDashboard from './components/TeacherDashboard';
 import { GraduationCap, ShieldCheck, Clock, User, Sparkles } from 'lucide-react';
+import { DialogProvider } from './context/DialogContext';
+// Tambahkan 'doc' di dalam baris import ini
+import { doc, collection, query, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
 
+function App() {
+  return (
+    <DialogProvider>
+       {/* Pastikan komponen TeacherDashboard ada di dalam sini */}
+       <TeacherDashboard />
+    </DialogProvider>
+  );
+}
 export default function App() {
   const [view, setView] = useState('student');
   const [time, setTime] = useState(new Date());
