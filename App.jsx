@@ -3,6 +3,8 @@ import StudentView from './components/StudentView';
 import TeacherDashboard from './components/TeacherDashboard';
 import { GraduationCap, ShieldCheck, Clock, User, Sparkles } from 'lucide-react';
 import { DialogProvider } from './context/DialogContext';
+// Tambahkan 'doc' di dalam baris import ini
+import { doc, collection, query, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
 
 function App() {
   return (
