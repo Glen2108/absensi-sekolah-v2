@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Guru - Absensi</title>
+    
+    <!-- Memanggil desain CSS yang sama -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Memanggil SweetAlert2 untuk pop-up sukses/gagal login -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="container">
+        <img src="logo-sekolah.png" alt="Logo Sekolah" class="logo-sekolah">
+        
+        <h2>Akses Dasbor Guru</h2>
+        <p style="margin-bottom: 20px; color: #555; font-size: 14px;">Silakan masuk menggunakan akun Firebase Anda.</p>
+        
+        <!-- ID form ini terhubung langsung dengan auth.js -->
+        <form id="login-form">
+            <input type="email" id="email" placeholder="Email Guru" required>
+            <input type="password" id="password" placeholder="Kata Sandi" required>
+            
+            <button type="submit">Masuk</button>
+        </form>
+
+        <!-- Tombol kembali ke halaman utama siswa -->
+        <div style="margin-top: 20px; text-align: center;">
+            <a href="index.html" style="color: #555; text-decoration: none; font-size: 14px; font-weight: bold;">
+                ⬅️ Kembali ke Halaman Absen
+            </a>
+        </div>
+    </div>
+
+    <!-- Memanggil logika login dari Firebase -->
+    <script type="module" src="js/auth.js"></script>
+</body>
+</html>
