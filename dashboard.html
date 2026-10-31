@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Rekap Absensi</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h2>Rekap Absensi Siswa</h2>
+            <button id="btn-logout">Logout</button>
+        </header>
+
+        <div id="rekap-summary" style="display: flex; gap: 15px; margin-top: 20px; font-weight: bold;">
+            <div style="padding: 10px; background: #e0f7fa; border-radius: 5px;">Total Hadir: <span id="count-total">0</span></div>
+            <div style="padding: 10px; background: #e8f5e9; border-radius: 5px;">Kelas X-2: <span id="count-x">0</span></div>
+            <div style="padding: 10px; background: #fff3e0; border-radius: 5px;">Kelas XI-2: <span id="count-xi">0</span></div>
+            <div style="padding: 10px; background: #fce4ec; border-radius: 5px;">Kelas XII-5: <span id="count-xii">0</span></div>
+        </div>
+
+        <!-- Tambahkan area filter di sini -->
+        <div style="margin-top: 20px; margin-bottom: 15px;">
+            <label for="filter-kelas"><strong>Filter Kelas: </strong></label>
+            <select id="filter-kelas" style="padding: 5px; border-radius: 4px;">
+                <option value="Semua">Semua Kelas</option>
+                <option value="X-2">Kelas X-2</option>
+                <option value="XI-2">Kelas XI-2</option>
+                <option value="XII-5">Kelas XII-5</option>
+            </select>
+        </div>
+
+        <!-- Tambahkan Tombol Export Ini -->
+        <button id="btn-export" style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            📥 Export ke Excel (CSV)
+        </button>
+        
+        <table border="1" width="100%" style="border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Nama Siswa</th>
+                    <th>Kelas</th>
+                    <th>Status</th>
+                    <th>Keterangan</th>
+                    <th>Waktu Absen</th>
+                </tr>
+            </thead>
+            <tbody id="tabel-absensi">
+                <tr>
+                    <td colspan="5" align="center">Memuat data...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+/* =========================================
+   ANIMASI MASUK (LOADING)
+   ========================================= */
+@keyframes fadeInSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px); /* Mulai dari posisi agak ke bawah */
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0); /* Kembali ke posisi semula */
+    }
+}
+
+/* =========================================
+   PENGATURAN LATAR BELAKANG UTAMA
+   ========================================= */
+body {
+    /* Panggil gambar latar belakang (pastikan nama file sesuai) */
+    background-image: url('../bg-school.png'); 
+    background-size: cover; 
+    background-position: center center; 
+    background-repeat: no-repeat;
+    
+    /* Efek mengambang (fixed) saat halaman digeser */
+    background-attachment: fixed; 
+
+    /* Pengaturan standar untuk posisi ke tengah layar */
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* =========================================
+   KOTAK FORM (GLASSMORPHISM)
+   ========================================= */
+.container {
+    /* Membuat latar belakang putih transparan (opacity 85%) */
+    background-color: rgba(255, 255, 255, 0.85); 
+    
+    /* Efek blur tipis (kaca buram) pada latar belakang */
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    
+    /* Bentuk dan bayangan kotak */
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 450px;
+    text-align: center;
+
+    /* Memicu animasi saat halaman dimuat */
+    animation: fadeInSlideUp 0.8s ease-out forwards;
+}
+
+/* =========================================
+   LOGO & TEKS FORM
+   ========================================= */
+.logo-sekolah {
+    width: 90px; /* Ukuran logo */
+    height: auto;
+    display: block; 
+    margin: 0 auto 15px auto; /* Ke tengah & memberi jarak bawah */
+}
+
+.container h2 {
+    color: #333;
+    margin-bottom: 20px;
+    margin-top: 0;
+}
+
+/* =========================================
+   INPUT & TOMBOL
+   ========================================= */
+.container input, 
+.container select, 
+.container button {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+.container input[readonly] {
+    background-color: #f8f9fa; /* Warna abu-abu terang untuk input yang tidak bisa diedit */
+    cursor: not-allowed;
+}
+
+.container button {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.3s ease;
+}
+
+.container button:hover {
+    background-color: #0056b3;
+}
+
+.container button:disabled {
+    background-color: #a0c4ff;
+    cursor: not-allowed;
+}
