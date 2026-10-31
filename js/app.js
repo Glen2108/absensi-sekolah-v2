@@ -57,7 +57,21 @@ function dapatkanLokasiSiswa() {
 // 4. INISIALISASI KAMERA SCANNER (YANG SEBELUMNYA HILANG)
 // ==========================================
 let html5QrcodeScanner = new Html5QrcodeScanner(
-    "reader", { fps: 10, qrbox: {width: 250, height: 250} }, false
+    "reader", { 
+        fps: 10, 
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+            let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+            let qrboxSize = Math.floor(minEdgeSize * 0.8); // 80% dari lebar layar
+            return {
+                width: qrboxSize,
+                height: qrboxSize
+            };
+        },
+        rememberLastUsedCamera: true,
+        // Memaksa browser HP untuk memprioritaskan kamera belakang
+        videoConstraints: { facingMode: "environment" }
+    },
+    false
 );
 
 function onScanSuccess(decodedText, decodedResult) {
