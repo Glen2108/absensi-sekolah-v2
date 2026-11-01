@@ -9,7 +9,7 @@ const KOORDINAT_SEKOLAH = {
     latitude: 1.4748,  
     longitude: 124.8421
 };
-const RADIUS_MAKSIMAL_METER = 5000000; // Ubah ke 50 setelah selesai uji coba
+const RADIUS_MAKSIMAL_METER = 50; // Ubah ke 50 setelah selesai uji coba
 
 // ==========================================
 // DEKLARASI ELEMEN HTML

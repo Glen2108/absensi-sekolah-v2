@@ -1,112 +1,231 @@
-/* =========================================
-   ANIMASI MASUK (LOADING)
-   ========================================= */
-@keyframes fadeInSlideUp {
-    from {
-        opacity: 0;
-        transform: translateY(40px); /* Mulai dari posisi agak ke bawah */
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0); /* Kembali ke posisi semula */
-    }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-/* =========================================
-   PENGATURAN LATAR BELAKANG UTAMA
-   ========================================= */
 body {
-    /* Panggil gambar latar belakang (pastikan nama file sesuai) */
-    background-image: url('../bg-school.png'); 
-    background-size: cover; 
-    background-position: center center; 
-    background-repeat: no-repeat;
-    
-    /* Efek mengambang (fixed) saat halaman digeser */
-    background-attachment: fixed; 
-
-    /* Pengaturan standar untuk posisi ke tengah layar */
-    margin: 0;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Poppins', sans-serif;
+    background: url('../bg-school.png') no-repeat center center fixed;
+    background-size: cover;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
 }
 
-/* =========================================
-   KOTAK FORM (GLASSMORPHISM)
-   ========================================= */
 .container {
-    /* Membuat latar belakang putih transparan (opacity 85%) */
-    background-color: rgba(255, 255, 255, 0.85); 
-    
-    /* Efek blur tipis (kaca buram) pada latar belakang */
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    
-    /* Bentuk dan bayangan kotak */
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 35px;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
     width: 90%;
-    max-width: 450px;
+    max-width: 420px;
     text-align: center;
-
-    /* Memicu animasi saat halaman dimuat */
     animation: fadeInSlideUp 0.8s ease-out forwards;
 }
 
-/* =========================================
-   LOGO & TEKS FORM
-   ========================================= */
+@keyframes fadeInSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .logo-sekolah {
-    width: 90px; /* Ukuran logo */
+    width: 80px;
     height: auto;
-    display: block; 
-    margin: 0 auto 15px auto; /* Ke tengah & memberi jarak bawah */
-}
-
-.container h2 {
-    color: #333;
-    margin-bottom: 20px;
-    margin-top: 0;
-}
-
-/* =========================================
-   INPUT & TOMBOL
-   ========================================= */
-.container input, 
-.container select, 
-.container button {
-    width: 100%;
-    padding: 12px;
     margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 16px;
+    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.1));
 }
 
-.container input[readonly] {
-    background-color: #f8f9fa; /* Warna abu-abu terang untuk input yang tidak bisa diedit */
-    cursor: not-allowed;
+h2 {
+    color: #222;
+    margin-bottom: 5px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+#reader {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: none !important;
+    box-shadow: 0 0 20px rgba(0, 123, 255, 0.15);
+    background-color: #000;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.container input, 
+.container select {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.3s ease;
+    color: #333;
+}
+
+.container input:focus, 
+.container select:focus {
+    border: 2px solid #007bff;
+    outline: none;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.2);
 }
 
 .container button {
+    padding: 14px;
     background-color: #007bff;
     color: white;
-    font-weight: bold;
-    cursor: pointer;
     border: none;
-    transition: background-color 0.3s ease;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
 }
 
-.container button:hover {
+.container button:hover:not(:disabled) {
     background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+}
+
+.container button:active:not(:disabled) {
+    transform: translateY(1px);
 }
 
 .container button:disabled {
     background-color: #a0c4ff;
     cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* =========================================
+   GAYA KHUSUS DASBOR GURU & TABEL MODERN
+   ========================================= */
+
+/* Memperlebar container khusus untuk dasbor agar tabel leluasa */
+.dashboard-container {
+    max-width: 900px !important;
+    padding: 30px;
+}
+
+/* Membungkus tabel agar bisa digeser (swipe) di layar HP */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    margin-top: 20px;
+}
+
+/* Desain dasar tabel */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap; /* Mencegah teks turun ke bawah jika kolom sempit */
+    text-align: left;
+}
+
+/* Desain Header Tabel (Kepala Tabel) */
+th {
+    background-color: #007bff;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 16px;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+/* Membuat sudut atas tabel membulat */
+th:first-child { border-top-left-radius: 16px; }
+th:last-child { border-top-right-radius: 16px; }
+
+/* Desain Baris dan Kolom (Isi Tabel) */
+td {
+    padding: 14px 16px;
+    color: #444;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    transition: background 0.3s ease;
+}
+
+/* Efek saat baris dilewati kursor mouse (Hover) */
+tr:hover td {
+    background-color: rgba(0, 123, 255, 0.08);
+}
+
+/* Menghilangkan garis bawah pada baris terakhir agar rapi */
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* Desain Kartu Rekapitulasi di atas tabel */
+.rekap-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.rekap-cards span {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 15px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #007bff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* =========================================
+   BADGE STATUS KEHADIRAN (LABEL WARNA)
+   ========================================= */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    text-align: center;
+    min-width: 80px;
+    letter-spacing: 0.5px;
+}
+
+/* Hijau untuk Hadir */
+.status-hadir {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+/* Kuning untuk Sakit */
+.status-sakit {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* Biru untuk Izin */
+.status-izin {
+    background-color: #cce5ff;
+    color: #004085;
+    border: 1px solid #b8daff;
 }

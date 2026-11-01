@@ -3,57 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Rekap Absensi</title>
+    <title>Dasbor Guru - Rekap Absensi</title>
+    
+    <!-- Memuat font Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h2>Rekap Absensi Siswa</h2>
-            <button id="btn-logout">Logout</button>
-        </header>
-
-        <div id="rekap-summary" style="display: flex; gap: 15px; margin-top: 20px; font-weight: bold;">
-            <div style="padding: 10px; background: #e0f7fa; border-radius: 5px;">Total Hadir: <span id="count-total">0</span></div>
-            <div style="padding: 10px; background: #e8f5e9; border-radius: 5px;">Kelas X-2: <span id="count-x">0</span></div>
-            <div style="padding: 10px; background: #fff3e0; border-radius: 5px;">Kelas XI-2: <span id="count-xi">0</span></div>
-            <div style="padding: 10px; background: #fce4ec; border-radius: 5px;">Kelas XII-5: <span id="count-xii">0</span></div>
+    <!-- Tambahkan class dashboard-container di sini -->
+    <div class="container dashboard-container">
+        <h2>Rekap Absensi Siswa</h2>
+        
+        <button id="btn-logout" style="background-color: #dc3545; margin-bottom: 20px;">Keluar / Logout</button>
+        
+        <!-- Kartu Rekap -->
+        <div class="rekap-cards">
+            <span>Total Hadir: <b id="count-total">0</b></span>
+            <span>X-2: <b id="count-x">0</b></span>
+            <span>XI-2: <b id="count-xi">0</b></span>
+            <span>XII-5: <b id="count-xii">0</b></span>
         </div>
 
-        <!-- Tambahkan area filter di sini -->
-        <div style="margin-top: 20px; margin-bottom: 15px;">
-            <label for="filter-kelas"><strong>Filter Kelas: </strong></label>
-            <select id="filter-kelas" style="padding: 5px; border-radius: 4px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+            <select id="filter-kelas" style="flex: 1; min-width: 150px;">
                 <option value="Semua">Semua Kelas</option>
                 <option value="X-2">Kelas X-2</option>
                 <option value="XI-2">Kelas XI-2</option>
                 <option value="XII-5">Kelas XII-5</option>
             </select>
+            <button id="btn-export" style="background-color: #28a745; flex: 1; min-width: 180px;">📥 Export Excel (CSV)</button>
+            <button id="btn-reset" style="background-color: #dc3545; flex: 1; min-width: 150px;">⚠️ Reset Semua Data</button>
         </div>
 
-        <!-- Tambahkan Tombol Export Ini -->
-        <button id="btn-export" style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
-            📥 Export ke Excel (CSV)
-        </button>
-        
-        <table border="1" width="100%" style="border-collapse: collapse;">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Siswa</th>
-                    <th>Kelas</th>
-                    <th>Status</th>
-                    <th>Keterangan</th>
-                    <th>Waktu Absen</th>
-                </tr>
-            </thead>
-            <tbody id="tabel-absensi">
-                <tr>
-                    <td colspan="6" align="center">Memuat data...</td>
-                </tr>
-            </tbody>
-        </table>
+        <!-- BUNGKUS TABEL DENGAN DIV INI AGAR RESPONSIF DI HP -->
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Siswa</th>
+                        <th style="text-align: center;">Kelas</th>
+                        <th style="text-align: center;">Status</th>
+                        <th>Keterangan</th>
+                        <th style="text-align: center;">Waktu Absen</th>
+                        <th style="text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tabel-absensi">
+                    <tr><td colspan="7" align="center">Memuat data...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script type="module" src="js/dashboard.js"></script>

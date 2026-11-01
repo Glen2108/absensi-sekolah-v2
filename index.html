@@ -3,52 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absensi Siswa</title>
+    <title>Absensi Digital - Scan QR</title>
     
-    <!-- Memanggil file CSS -->
+    <!-- Memuat font Poppins untuk gaya modern -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="css/style.css">
     
-    <!-- Library SweetAlert2 untuk Notifikasi Modern -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- Library HTML5-QRCode untuk Pemindai Kamera -->
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
     <div class="container">
-        <!-- Logo Sekolah -->
         <img src="logo-sekolah.png" alt="Logo Sekolah" class="logo-sekolah">
+        <h2>Absensi Digital</h2>
+        <p style="margin-bottom: 20px; color: #555; font-size: 14px;">Arahkan QR Code Anda ke kamera di bawah ini</p>
         
-        <h2>Absensi Siswa</h2>
+        <div id="reader"></div>
         
-        <!-- Area Pemindai Kamera -->
-        <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto 20px auto;"></div>
-        
-        <form id="absen-form">
-            <!-- Input dibuat readonly agar siswa tidak mengetik manual, melainkan dari hasil scan -->
-            <input type="text" id="namaSiswa" placeholder="Nama Siswa (Otomatis dari QR)" readonly required>
-            <input type="text" id="kelasSiswa" placeholder="Kelas (Otomatis dari QR)" readonly required>
-
-            <!-- Tambahan Pilihan Status -->
-            <select id="statusSiswa" required style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc;">
-                <option value="Hadir">Hadir (Di Sekolah)</option>
+        <form id="absensi-form">
+            <input type="text" id="namaSiswa" placeholder="👤 Nama Siswa (Dari QR)" readonly required>
+            <input type="text" id="kelasSiswa" placeholder="🏫 Kelas (Dari QR)" readonly required>
+            
+            <select id="statusAbsen" required>
+                <option value="" disabled selected>✨ Pilih Status Kehadiran ✨</option>
+                <option value="Hadir">Hadir</option>
                 <option value="Sakit">Sakit</option>
                 <option value="Izin">Izin</option>
             </select>
-            <!-- Tambahan: Kolom Keterangan (Sembunyi by default) -->
-            <input type="text" id="keteranganSiswa" placeholder="Tulis alasan/keterangan..." style="display: none; width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;">
+            
+            <input type="text" id="keterangan" placeholder="📝 Keterangan (Khusus Sakit/Izin)">
+            
             <button type="submit" id="btn-submit" disabled>Kirim Absen</button>
         </form>
 
-        <!-- TAMBAHKAN KODE INI UNTUK PINTU MASUK GURU -->
-        <div style="margin-top: 20px; text-align: center;">
-            <a href="login.html" style="color: #555; text-decoration: none; font-size: 14px; font-weight: bold;">
-                👨‍🏫 Masuk Dasbor Guru
-            </a>
+        <div style="margin-top: 20px; font-size: 13px;">
+            <a href="login.html" style="color: #666; text-decoration: none; font-weight: 600;">🔒 Masuk Dasbor Guru</a>
         </div>
     </div>
 
-    <!-- Memanggil logika JavaScript utama -->
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
