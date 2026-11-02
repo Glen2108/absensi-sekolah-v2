@@ -201,7 +201,7 @@ absenForm.addEventListener("submit", async (e) => {
         // ==========================================
         let jarak = null; 
         
-        if (statusSaatIni === "Hadir") {
+        if (statusFinal === "Hadir") {
             tombolSubmit.innerText = "Mengecek Lokasi GPS...";
             const posisi = await dapatkanLokasiSiswa();
             const latSiswa = posisi.coords.latitude;
@@ -245,8 +245,8 @@ absenForm.addEventListener("submit", async (e) => {
         await addDoc(collection(db, "absensi"), {
             nama: namaSiswaInput.value,
             kelas: kelasSiswaInput.value,
-            status: statusSaatIni, 
-            keterangan: statusSaatIni === "Hadir" ? "-" : keteranganSiswaInput.value,
+            status: statusFinal, 
+            keterangan: statusFinal === "Hadir" ? "-" : keteranganSiswaInput.value,
             jarak_meter: jarak ? Math.round(jarak) : "Tidak Cek GPS",
             waktu_absen: serverTimestamp()
         });
@@ -255,12 +255,12 @@ absenForm.addEventListener("submit", async (e) => {
         Swal.fire({
             icon: 'success',
             // Mengubah Judul
-            title: `Mantap! Absen ${statusSaatIni} Masuk`, 
+            title: `Mantap! Absen ${statusFinal} Masuk`, 
             
             // Menggunakan html agar bisa memakai tag <b> atau <br>
-            html: statusSaatIni === "Hadir" 
+            html: statusFinal === "Hadir" 
                   ? `Terima kasih, <b>${namaSiswaInput.value}</b>.<br>Jarak Anda: ${Math.round(jarak)} meter dari sekolah.` 
-                  : `Data <b>${statusSaatIni}</b> untuk ${namaSiswaInput.value} berhasil dicatat.`,
+                  : `Data <b>${statusFinal}</b> untuk ${namaSiswaInput.value} berhasil dicatat.`,
             
             // --- KODE PEMANGGILAN FOTO ---
             imageUrl: `img/siswa/${namaSiswaInput.value}.jpg`,
