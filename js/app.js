@@ -213,7 +213,7 @@ absenForm.addEventListener("submit", async (e) => {
             imageHeight: 120,
             imageAlt: 'Foto Siswa',
             // Jika foto tidak ditemukan, sistem akan memuat gambar avatar default (opsional)
-            didError: (elm) => { elm.src = 'img/avatar-default.png'; },
+            didError: (elm) => { elm.src = 'img/siswa/avatar-default.png'; },
             // -----------------------------
 
             timer: 3000,
