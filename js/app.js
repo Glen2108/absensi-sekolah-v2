@@ -9,7 +9,7 @@ const KOORDINAT_SEKOLAH = {
     latitude: 1.4748,  
     longitude: 124.8421
 };
-const RADIUS_MAKSIMAL_METER = 5000; // Ubah ke 50 setelah selesai uji coba
+const RADIUS_MAKSIMAL_METER = 50000; // Ubah ke 50 setelah selesai uji coba
 
 // ==========================================
 // DEKLARASI ELEMEN HTML
@@ -215,7 +215,7 @@ absenForm.addEventListener("submit", async (e) => {
             // Jika foto tidak ditemukan, sistem akan memuat gambar avatar default (opsional)
             didError: (elm) => { elm.src = 'img/avatar-default.png'; },
             // -----------------------------
-            
+
             timer: 3000,
             showConfirmButton: false
         });
