@@ -16,10 +16,10 @@ const RADIUS_MAKSIMAL_METER = 50; // Ubah ke 50 setelah selesai uji coba
 // ==========================================
 const namaSiswaInput = document.getElementById("namaSiswa");
 const kelasSiswaInput = document.getElementById("kelasSiswa");
-const statusSiswaInput = document.getElementById("statusSiswa");
-const keteranganSiswaInput = document.getElementById("keteranganSiswa");
+const statusSiswaInput = document.getElementById("statusAbsen");
+const keteranganSiswaInput = document.getElementById("keterangan");
 const tombolSubmit = document.getElementById("btn-submit");
-const absenForm = document.getElementById("absen-form");
+const absenForm = document.getElementById("absensi-form");
 
 // ==========================================
 // PENGATURAN NOTIFIKASI MENGAMBANG (TOAST)
@@ -167,8 +167,8 @@ absenForm.addEventListener("submit", async (e) => {
                 });
                 tombolSubmit.innerText = "Kirim Absen";
                 tombolSubmit.disabled = false;
-                return; 
-                // Nyalakan ulang kamera agar siswa bisa mencoba lagi setelah mendekat
+                
+                // Pindahkan setTimeout ke SINI (sebelum return)
                 setTimeout(() => {
                     try { html5QrcodeScanner.resume(); } catch(e) {}
                 }, 2500);
