@@ -22,6 +22,23 @@ const tombolSubmit = document.getElementById("btn-submit");
 const absenForm = document.getElementById("absen-form");
 
 // ==========================================
+// PENGATURAN NOTIFIKASI MENGAMBANG (TOAST)
+// ==========================================
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end', // Posisi di kanan atas
+    showConfirmButton: false,
+    timer: 4000, // Hilang otomatis setelah 4 detik
+    timerProgressBar: true,
+    background: 'rgba(30, 30, 30, 0.85)', // Warna hitam gelap dengan transparansi 85%
+    color: '#ffffff', // Warna teks putih agar kontras
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
+
+// ==========================================
 // 2. FUNGSI MENGHITUNG JARAK (RUMUS HAVERSINE)
 // ==========================================
 function hitungJarak(lat1, lon1, lat2, lon2) {
@@ -75,20 +92,17 @@ let html5QrcodeScanner = new Html5QrcodeScanner(
 );
 
 function onScanSuccess(decodedText, decodedResult) {
+    playBeep();
     const data = decodedText.split("|");
     if(data.length === 2) {
         namaSiswaInput.value = data[0];
         kelasSiswaInput.value = data[1];
-        tombolSubmit.disabled = false;
-        html5QrcodeScanner.clear(); // Matikan kamera setelah berhasil scan
+        document.getElementById("statusAbsen").value = "Hadir";
+        html5QrcodeScanner.pause();
+
+        tombolSubmit.disabled = false;        
+        tombolSubmit.click();
         
-        Swal.fire({
-            icon: 'success',
-            title: 'QR Code Terbaca!',
-            text: `Halo, ${data[0]}`,
-            timer: 1500,
-            showConfirmButton: false
-        });
     } else {
         Swal.fire({
             icon: 'error',
@@ -146,15 +160,28 @@ absenForm.addEventListener("submit", async (e) => {
             );
 
             if (jarak > RADIUS_MAKSIMAL_METER) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Absen Hadir Ditolak!',
-                    html: `Anda berada di luar area sekolah.<br>Jarak Anda: <b>${Math.round(jarak)} meter</b> dari sekolah.`,
-                    confirmButtonColor: '#d33'
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Lokasi Ditolak!',
+                    text: `Jarak: ${Math.round(jarak)}m (Maks: ${RADIUS_MAKSIMAL_METER}m)`
                 });
                 tombolSubmit.innerText = "Kirim Absen";
                 tombolSubmit.disabled = false;
                 return; 
+                // Nyalakan ulang kamera agar siswa bisa mencoba lagi setelah mendekat
+                setTimeout(() => {
+                    try { html5QrcodeScanner.resume(); } catch(e) {}
+                }, 2500);
+                
+                return; // Hentikan proses absen
+            }
+            // Jika posisi SISWA BERADA DI LOKASI SEKOLAH
+            else {
+                Toast.fire({
+                    icon: 'info',
+                    title: 'Lokasi Sesuai',
+                    text: `Jarak Anda ${Math.round(jarak)}m dari titik pusat.`
+                });
             }
         }
 
@@ -172,19 +199,34 @@ absenForm.addEventListener("submit", async (e) => {
         // Perbaikan format backtick pada SweetAlert
         Swal.fire({
             icon: 'success',
-            title: `Berhasil Absen (${statusSaatIni})!`,
-            text: statusSaatIni === "Hadir" ? `Jarak valid: ${Math.round(jarak)} meter.` : "Data keterangan berhasil disimpan.",
+            // Mengubah Judul
+            title: `Mantap! Absen ${statusSaatIni} Masuk`, 
+            
+            // Menggunakan html agar bisa memakai tag <b> atau <br>
+            html: statusSaatIni === "Hadir" 
+                  ? `Terima kasih, <b>${namaSiswaInput.value}</b>.<br>Jarak Anda: ${Math.round(jarak)} meter dari sekolah.` 
+                  : `Data <b>${statusSaatIni}</b> untuk ${namaSiswaInput.value} berhasil dicatat.`,
+            
             timer: 3000,
             showConfirmButton: false
         });
         
         absenForm.reset();
-        statusSiswaInput.value = "Hadir";
         keteranganSiswaInput.style.display = "none";
-        tombolSubmit.disabled = true;
-        
-        // Nyalakan ulang kamera untuk siswa berikutnya
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        tombolSubmit.disabled = false;
+
+        // ==========================================
+        // PENGATURAN WAKTU JEDA KAMERA
+        // ==========================================
+        // Angka 2500 berarti 2.5 detik (1000 = 1 detik)
+        // Silakan ubah angka ini sesuai kecepatan antrean yang Anda inginkan
+        setTimeout(() => {
+            try {
+                html5QrcodeScanner.resume();
+            } catch(e) {
+                console.log("Kamera siap.");
+            }
+        }, 2500);
 
     } catch (error) {
         let pesanError = error.message || error;
@@ -200,3 +242,31 @@ absenForm.addEventListener("submit", async (e) => {
         tombolSubmit.disabled = false;
     }
 });
+
+// ==========================================
+// FUNGSI EFEK SUARA BEEP (WEB AUDIO API)
+// ==========================================
+function playBeep() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = 'sine'; // Tipe gelombang suara yang halus
+        oscillator.frequency.value = 880; // Frekuensi nada (880 Hz = Nada A tinggi)
+        
+        // Mengatur volume agar memudar secara cepat (durasi 0.15 detik)
+        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+        console.log("Audio API tidak didukung di browser ini.");
+    }
+}
