@@ -1,6 +1,5 @@
 import { db } from "./firebase-config.js";
-import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 // ==========================================
 // 1. KONFIGURASI GEOFENCING SEKOLAH
 // ==========================================
@@ -9,7 +8,7 @@ const KOORDINAT_SEKOLAH = {
     latitude: 1.4748,  
     longitude: 124.8421
 };
-const RADIUS_MAKSIMAL_METER = 50000; // Ubah ke 50 setelah selesai uji coba
+const RADIUS_MAKSIMAL_METER = 25000; // Ubah ke 50 setelah selesai uji coba
 
 // ==========================================
 // DEKLARASI ELEMEN HTML
@@ -73,6 +72,7 @@ function dapatkanLokasiSiswa() {
 // ==========================================
 // 4. INISIALISASI KAMERA SCANNER (YANG SEBELUMNYA HILANG)
 // ==========================================
+let sedangMemproses = false;
 let html5QrcodeScanner = new Html5QrcodeScanner(
     "reader", { 
         fps: 10, 
@@ -92,6 +92,8 @@ let html5QrcodeScanner = new Html5QrcodeScanner(
 );
 
 function onScanSuccess(decodedText, decodedResult) {
+    // 1. Jika sedang memproses data lain, abaikan scan baru
+    if (sedangMemproses) return;
     playBeep();
     const data = decodedText.split("|");
     if(data.length === 2) {
@@ -139,11 +141,52 @@ statusSiswaInput.addEventListener("change", () => {
 absenForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    // 1. Kunci form agar tidak bisa diklik dobel
+    if (sedangMemproses) return; 
+    sedangMemproses = true;
+
+    // 2. Ambil nilai yang sudah bersih dari spasi
+    const namaBersih = namaSiswaInput.value.trim();
+    const kelasBersih = kelasSiswaInput.value.trim();
     const statusSaatIni = statusSiswaInput.value;
+
     tombolSubmit.innerText = "Memproses...";
     tombolSubmit.disabled = true;
 
     try {
+
+        // ==========================================
+        // FITUR CEK DUPLIKASI (ANTI DOUBLE SCAN)
+        // ==========================================
+        tombolSubmit.innerText = "Cek Data...";
+        const qCek = query(collection(db, "absensi"), where("nama", "==", namaBersih));
+        const cekSnapshot = await getDocs(qCek);
+
+        if (!cekSnapshot.empty) {
+            // Jika data sudah ditemukan di database, tolak absennya
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sudah Presensi!',
+                html: `Siswa bernama <b>${namaSiswaInput.value}</b> sudah tercatat melakukan absensi.`,
+                timer: 3000,
+                showConfirmButton: false
+            });
+
+            absenForm.reset();
+            tombolSubmit.innerText = "Kirim Absen";
+            tombolSubmit.disabled = false;
+
+            // Buka kunci kembali
+            sedangMemproses = false;
+
+            // Nyalakan ulang kamera untuk siswa berikutnya setelah peringatan hilang
+            setTimeout(() => {
+                try { html5QrcodeScanner.resume(); } catch(e) {}
+            }, 3000);
+
+            return; // Hentikan proses, jangan lanjut ke GPS atau simpan data
+        }
+        // ==========================================
         let jarak = null; 
         
         if (statusSaatIni === "Hadir") {
@@ -213,7 +256,7 @@ absenForm.addEventListener("submit", async (e) => {
             imageHeight: 120,
             imageAlt: 'Foto Siswa',
             // Jika foto tidak ditemukan, sistem akan memuat gambar avatar default (opsional)
-            didError: (elm) => { elm.src = 'img/siswa/avatar-default.png'; },
+            didError: (elm) => { elm.src = 'img/avatar-default.png'; },
             // -----------------------------
 
             timer: 3000,
