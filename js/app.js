@@ -9,7 +9,7 @@ const KOORDINAT_SEKOLAH = {
     latitude: 1.4748,  
     longitude: 124.8421
 };
-const RADIUS_MAKSIMAL_METER = 50; // Ubah ke 50 setelah selesai uji coba
+const RADIUS_MAKSIMAL_METER = 5000; // Ubah ke 50 setelah selesai uji coba
 
 // ==========================================
 // DEKLARASI ELEMEN HTML
@@ -206,6 +206,15 @@ absenForm.addEventListener("submit", async (e) => {
             html: statusSaatIni === "Hadir" 
                   ? `Terima kasih, <b>${namaSiswaInput.value}</b>.<br>Jarak Anda: ${Math.round(jarak)} meter dari sekolah.` 
                   : `Data <b>${statusSaatIni}</b> untuk ${namaSiswaInput.value} berhasil dicatat.`,
+            
+            // --- KODE PEMANGGILAN FOTO ---
+            imageUrl: `img/siswa/${namaSiswaInput.value}.jpg`,
+            imageWidth: 120,
+            imageHeight: 120,
+            imageAlt: 'Foto Siswa',
+            // Jika foto tidak ditemukan, sistem akan memuat gambar avatar default (opsional)
+            didError: (elm) => { elm.src = 'img/avatar-default.png'; },
+            // -----------------------------
             
             timer: 3000,
             showConfirmButton: false

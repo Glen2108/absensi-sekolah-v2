@@ -229,3 +229,23 @@ tr:last-child td {
     color: #004085;
     border: 1px solid #b8daff;
 }
+
+/* =========================================
+   RESPONSIVITAS LATAR BELAKANG (HP & TABLET)
+   ========================================= */
+@media screen and (max-width: 768px) {
+    body {
+        /* Mematikan efek fixed di HP untuk mencegah bug zoom pada browser mobile */
+        background-attachment: scroll;
+        
+        /* Menggeser fokus gambar ke atas tengah agar objek utama tidak terpotong */
+        background-position: top center;
+    }
+    
+    /* (OPSIONAL) Hapus tanda komentar di bawah ini jika Anda punya gambar khusus untuk layar HP */
+    /*
+    body {
+        background-image: url('../bg-school-mobile.png'); 
+    }
+    */
+}
