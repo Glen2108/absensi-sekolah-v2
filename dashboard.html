@@ -8,6 +8,8 @@
     <!-- Memuat font Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007bff">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
@@ -26,6 +28,7 @@
         </div>
 
         <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+            <input type="text" id="search-nama" placeholder="🔍 Cari Nama Siswa..." style="flex: 2; min-width: 200px; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
             <select id="filter-kelas" style="flex: 1; min-width: 150px;">
                 <option value="Semua">Semua Kelas</option>
                 <option value="X-2">Kelas X-2</option>

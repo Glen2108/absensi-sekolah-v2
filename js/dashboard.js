@@ -22,9 +22,22 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // 2. DETEKSI PERUBAHAN PADA FILTER
-document.getElementById("filter-kelas").addEventListener("change", (e) => {
-    loadDataAbsensi(e.target.value); 
-});
+document.getElementById("filter-kelas").addEventListener("change", terapkanFilter);
+document.getElementById("search-nama").addEventListener("input", terapkanFilter);
+
+function terapkanFilter() {
+    const filterKelas = document.getElementById("filter-kelas").value;
+    const keyword = document.getElementById("search-nama").value.toLowerCase();
+    
+    dataTerfilter = semuaDataAbsensi.filter(data => {
+        const cocokKelas = (filterKelas === "Semua") || (data.kelas === filterKelas);
+        const cocokNama = data.nama.toLowerCase().includes(keyword);
+        return cocokKelas && cocokNama;
+    });
+    
+    halamanSaatIni = 1;
+    renderTabelPagination();
+}
 
 // ==========================================
 // 3. FUNGSI MENGAMBIL DATA (REALTIME & URUT ABJAD)

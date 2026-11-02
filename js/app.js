@@ -148,7 +148,18 @@ absenForm.addEventListener("submit", async (e) => {
     // 2. Ambil nilai yang sudah bersih dari spasi
     const namaBersih = namaSiswaInput.value.trim();
     const kelasBersih = kelasSiswaInput.value.trim();
-    const statusSaatIni = statusSiswaInput.value;
+    let statusFinal = statusSiswaInput.value;
+
+    // --- LOGIKA TERLAMBAT (Contoh batas 07:15) ---
+    const waktu = new Date();
+    const jam = waktu.getHours();
+    const menit = waktu.getMinutes();
+
+    if (statusFinal === "Hadir") {
+        if (jam > 7 || (jam === 7 && menit > 15)) {
+            statusFinal = "Terlambat"; 
+        }
+    }
 
     tombolSubmit.innerText = "Memproses...";
     tombolSubmit.disabled = true;
@@ -164,6 +175,7 @@ absenForm.addEventListener("submit", async (e) => {
 
         if (!cekSnapshot.empty) {
             // Jika data sudah ditemukan di database, tolak absennya
+            playErrorBeep();
             Swal.fire({
                 icon: 'warning',
                 title: 'Sudah Presensi!',
@@ -321,4 +333,23 @@ function playBeep() {
     } catch (e) {
         console.log("Audio API tidak didukung di browser ini.");
     }
+}
+
+function playErrorBeep() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = 'sawtooth'; // Nada kasar peringatan
+        osc.frequency.value = 150; // Frekuensi rendah (Teeet)
+        
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+    } catch (e) {}
 }
