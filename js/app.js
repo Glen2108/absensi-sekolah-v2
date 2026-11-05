@@ -136,6 +136,49 @@ statusSiswaInput.addEventListener("change", () => {
 });
 
 // ==========================================
+// VALIDASI JADWAL PELAJARAN PER KELAS
+// ==========================================
+function validasiJadwal(kelas) {
+    const waktu = new Date();
+    const hari = waktu.getDay(); // 0=Minggu, 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu
+    const waktuTotalMenit = (waktu.getHours() * 60) + waktu.getMinutes();
+
+    // 1. KELAS XII-5 (Mode Fase Ujian: TKA, Susulan, Sumatif)
+    // Diizinkan absen setiap hari kerja (Senin-Jumat), jam berapa saja.
+    if (kelas === "XII-5") {
+        if (hari >= 1 && hari <= 5) { 
+            return { diizinkan: true, pesan: "" }; 
+        }
+        return { diizinkan: false, pesan: "Hari Libur! Presensi KBM hanya Senin - Jumat." };
+    }
+
+    // 2. KELAS X-2 (Kamis, 10:15 - 11:35)
+    if (kelas === "X-2") {
+        // Kamis = 4 | 10:15 = 615 menit | 11:35 = 695 menit
+        if (hari === 4 && waktuTotalMenit >= 615 && waktuTotalMenit <= 695) {
+            return { diizinkan: true, pesan: "" };
+        }
+        return { diizinkan: false, pesan: "Di luar jadwal! Presensi X-2 khusus hari Kamis (10:15 - 11:35)." };
+    }
+
+    // 3. KELAS XI-2 (Senin 12:45-14:40 & Rabu 09:35-10:15)
+    if (kelas === "XI-2") {
+        // Senin = 1 | 12:45 = 765 | 14:40 = 880
+        if (hari === 1 && waktuTotalMenit >= 765 && waktuTotalMenit <= 880) {
+            return { diizinkan: true, pesan: "" };
+        }
+        // Rabu = 3 | 09:35 = 575 | 10:15 = 615
+        if (hari === 3 && waktuTotalMenit >= 575 && waktuTotalMenit <= 615) {
+            return { diizinkan: true, pesan: "" };
+        }
+        return { diizinkan: false, pesan: "Di luar jadwal! Presensi XI-2 khusus Senin (12:45-14:40) & Rabu (09:35-10:15)." };
+    }
+
+    // Default untuk kelas lain yang mungkin ditambahkan nanti
+    return { diizinkan: true, pesan: "" }; 
+}
+
+// ==========================================
 // 6. LOGIKA TOMBOL ABSEN (SUBMIT)
 // ==========================================
 absenForm.addEventListener("submit", async (e) => {
@@ -150,16 +193,34 @@ absenForm.addEventListener("submit", async (e) => {
     const kelasBersih = kelasSiswaInput.value.trim();
     let statusFinal = statusSiswaInput.value;
 
-    // --- LOGIKA TERLAMBAT (Contoh batas 07:15) ---
-    const waktu = new Date();
-    const jam = waktu.getHours();
-    const menit = waktu.getMinutes();
-
-    if (statusFinal === "Hadir") {
-        if (jam > 7 || (jam === 7 && menit > 15)) {
-            statusFinal = "Terlambat"; 
-        }
+    // ==========================================
+    // CEK JADWAL PER KELAS
+    // ==========================================
+    const jadwal = validasiJadwal(kelasBersih);
+    
+    if (!jadwal.diizinkan) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Sesi Tertutup',
+            text: jadwal.pesan,
+            timer: 4000,
+            showConfirmButton: false
+        });
+        
+        if (typeof playErrorBeep === "function") playErrorBeep(); // Mainkan suara error jika ada
+        
+        absenForm.reset();
+        tombolSubmit.innerText = "Kirim Absen";
+        tombolSubmit.disabled = false;
+        sedangMemproses = false; // Buka kunci proses
+        
+        setTimeout(() => {
+            try { html5QrcodeScanner.resume(); } catch(e) {}
+        }, 4000);
+        
+        return; // Hentikan proses, siswa tidak bisa absen!
     }
+    // ==========================================
 
     tombolSubmit.innerText = "Memproses...";
     tombolSubmit.disabled = true;
@@ -353,3 +414,28 @@ function playErrorBeep() {
         osc.stop(audioCtx.currentTime + 0.4);
     } catch (e) {}
 }
+
+let deferredPrompt;
+const installBtn = document.getElementById('btn-install');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Mencegah Chrome memunculkan banner otomatis bawaannya
+    e.preventDefault();
+    // Simpan event agar bisa dipicu nanti
+    deferredPrompt = e;
+    // Munculkan tombol install buatan kita
+    installBtn.style.display = 'block';
+});
+
+installBtn.addEventListener('click', async () => {
+    if (deferredPrompt !== null) {
+        // Tampilkan pop-up instalasi Chrome
+        deferredPrompt.prompt();
+        // Tunggu respon pengguna
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            installBtn.style.display = 'none'; // Sembunyikan tombol jika sukses diinstal
+        }
+        deferredPrompt = null;
+    }
+});
