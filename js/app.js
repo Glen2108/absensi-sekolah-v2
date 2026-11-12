@@ -143,13 +143,13 @@ function validasiJadwal(kelas) {
     const hari = waktu.getDay(); // 0=Minggu, 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu
     const waktuTotalMenit = (waktu.getHours() * 60) + waktu.getMinutes();
 
-    // 1. KELAS XII-5 (Mode Fase Ujian: TKA, Susulan, Sumatif)
-    // Diizinkan absen setiap hari kerja (Senin-Jumat), jam berapa saja.
+    // 1. KELAS XII-5 (Rabu & Kamis, 13:25 - 14:40)
     if (kelas === "XII-5") {
-        if (hari >= 1 && hari <= 5) { 
-            return { diizinkan: true, pesan: "" }; 
+        // Rabu = 3, Kamis = 4 | 13:25 = 805 menit | 14:40 = 880 menit
+        if ((hari === 3 || hari === 4) && waktuTotalMenit >= 805 && waktuTotalMenit <= 880) {
+            return { diizinkan: true, pesan: "" };
         }
-        return { diizinkan: false, pesan: "Hari Libur! Presensi KBM hanya Senin - Jumat." };
+        return { diizinkan: false, pesan: "Di luar jadwal! Presensi XII-5 khusus Rabu & Kamis (13:25 - 14:40)." };
     }
 
     // 2. KELAS X-2 (Kamis, 10:15 - 11:35)
