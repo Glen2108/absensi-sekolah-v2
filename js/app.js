@@ -139,6 +139,8 @@ statusSiswaInput.addEventListener("change", () => {
 // VALIDASI JADWAL PELAJARAN PER KELAS
 // ==========================================
 function validasiJadwal(kelas) {
+
+    return { diizinkan: true, pesan: "" };
     const waktu = new Date();
     const hari = waktu.getDay(); // 0=Minggu, 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu
     const waktuTotalMenit = (waktu.getHours() * 60) + waktu.getMinutes();
@@ -323,14 +325,21 @@ absenForm.addEventListener("submit", async (e) => {
                   ? `Terima kasih, <b>${namaSiswaInput.value}</b>.<br>Jarak Anda: ${Math.round(jarak)} meter dari sekolah.` 
                   : `Data <b>${statusFinal}</b> untuk ${namaSiswaInput.value} berhasil dicatat.`,
             
-            // --- KODE PEMANGGILAN FOTO ---
-            imageUrl: `img/siswa/${namaSiswaInput.value}.jpg`,
+            // Tambahkan garis miring (/) di depan agar path absolut
+            imageUrl: `/img/siswa/${namaSiswaInput.value}.jpg`,
             imageWidth: 120,
             imageHeight: 120,
             imageAlt: 'Foto Siswa',
-            // Jika foto tidak ditemukan, sistem akan memuat gambar avatar default (opsional)
-            didError: (elm) => { elm.src = 'img/avatar-default.png'; },
-            // -----------------------------
+            
+            // Ganti didError dengan didOpen dan tangkap event onerror
+            didOpen: () => {
+                const img = Swal.getImage();
+                if (img) {
+                    img.onerror = () => { 
+                        img.src = '/img/avatar-default.png'; 
+                    };
+                }
+            },
 
             timer: 3000,
             showConfirmButton: false
