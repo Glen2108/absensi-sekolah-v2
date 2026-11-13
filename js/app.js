@@ -140,7 +140,6 @@ statusSiswaInput.addEventListener("change", () => {
 // ==========================================
 function validasiJadwal(kelas) {
 
-    return { diizinkan: true, pesan: "" };
     const waktu = new Date();
     const hari = waktu.getDay(); // 0=Minggu, 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu
     const waktuTotalMenit = (waktu.getHours() * 60) + waktu.getMinutes();
