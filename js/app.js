@@ -195,6 +195,29 @@ absenForm.addEventListener("submit", async (e) => {
     const kelasBersih = kelasSiswaInput.value.trim();
     let statusFinal = statusSiswaInput.value;
 
+    // Asumsi ID input keterangan Anda adalah "keterangan"
+    const keteranganSiswa = document.getElementById("keterangan").value.trim();
+
+    // ==========================================
+    // VALIDASI WAJIB KETERANGAN (SAKIT/IZIN)
+    // ==========================================
+    if ((statusFinal === "Sakit" || statusFinal === "Izin") && keteranganSiswa === "") {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Keterangan Kosong!',
+            text: `Anda memilih status ${statusFinal}. Kolom keterangan wajib diisi (misal: Surat Dokter, Acara Keluarga, dll).`,
+            confirmButtonColor: '#007bff'
+        });
+        
+        // Kembalikan tombol ke keadaan semula
+        tombolSubmit.innerText = "Kirim Absen";
+        tombolSubmit.disabled = false;
+        sedangMemproses = false; 
+        
+        return; // Hentikan proses pengiriman data!
+    }
+    // ==========================================
+
     // ==========================================
     // CEK JADWAL PER KELAS
     // ==========================================
@@ -349,7 +372,7 @@ absenForm.addEventListener("submit", async (e) => {
                 }
             },
 
-            timer: 3000,
+            timer: 5000,
             showConfirmButton: false
         });
         
