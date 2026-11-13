@@ -8,7 +8,7 @@ const KOORDINAT_SEKOLAH = {
     latitude: 1.4748,  
     longitude: 124.8421
 };
-const RADIUS_MAKSIMAL_METER = 25000; // Ubah ke 50 setelah selesai uji coba
+const RADIUS_MAKSIMAL_METER = 5000; // Ubah ke 50 setelah selesai uji coba
 
 // ==========================================
 // DEKLARASI ELEMEN HTML
@@ -126,12 +126,52 @@ html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 // ==========================================
 statusSiswaInput.addEventListener("change", () => {
     if (statusSiswaInput.value === "Sakit" || statusSiswaInput.value === "Izin") {
+        // Tampilkan kolom keterangan
         keteranganSiswaInput.style.display = "block";
         keteranganSiswaInput.required = true;
+
+        // BUKA KUNCI FORM (Izinkan ketik manual tanpa scan)
+        namaSiswaInput.readOnly = false;
+        kelasSiswaInput.readOnly = false;
+        tombolSubmit.disabled = false;
+
+        // Ubah petunjuk placeholder
+        namaSiswaInput.placeholder = "👤 Ketik Nama (HURUF BESAR)";
+        kelasSiswaInput.placeholder = "🏫 Ketik Kelas (Misal: X-2)";
+
+        // Matikan scanner sementara agar baterai tidak boros
+        try { html5QrcodeScanner.pause(); } catch(e){}
     } else {
         keteranganSiswaInput.style.display = "none";
         keteranganSiswaInput.required = false;
         keteranganSiswaInput.value = "";
+
+        // KUNCI KEMBALI FORM (Wajib lewat Scan QR)
+        namaSiswaInput.readOnly = true;
+        kelasSiswaInput.readOnly = true;
+        tombolSubmit.disabled = true;
+
+        // Kembalikan petunjuk placeholder
+        namaSiswaInput.placeholder = "👤 Nama Siswa (Dari QR)";
+        kelasSiswaInput.placeholder = "🏫 Kelas (Dari QR)";
+
+        // Nyalakan ulang scanner
+        try { html5QrcodeScanner.resume(); } catch(e){}
+    }
+});
+
+// Fitur Otomatis Huruf Besar (Real-time saat diketik)
+namaSiswaInput.addEventListener("input", () => {
+    if (statusSiswaInput.value === "Sakit" || statusSiswaInput.value === "Izin") {
+        namaSiswaInput.value = namaSiswaInput.value.toUpperCase();
+    }
+});
+
+// Fitur Otomatis untuk Kelas (Huruf Besar & Hapus Spasi)
+kelasSiswaInput.addEventListener("input", () => {
+    if (statusSiswaInput.value === "Sakit" || statusSiswaInput.value === "Izin") {
+        // Otomatis ubah ke huruf besar dan hilangkan spasi jika siswa menekan spasi
+        kelasSiswaInput.value = kelasSiswaInput.value.toUpperCase().replace(/\s+/g, '');
     }
 });
 
@@ -192,11 +232,31 @@ absenForm.addEventListener("submit", async (e) => {
 
     // 2. Ambil nilai yang sudah bersih dari spasi
     const namaBersih = namaSiswaInput.value.trim();
-    const kelasBersih = kelasSiswaInput.value.trim();
+    const kelasBersih = kelasSiswaInput.value.trim().toUpperCase();
     let statusFinal = statusSiswaInput.value;
 
     // Asumsi ID input keterangan Anda adalah "keterangan"
     const keteranganSiswa = document.getElementById("keterangan").value.trim();
+
+    // ==========================================
+    // VALIDASI KELAS KETAT (ANTI SALAH KETIK)
+    // ==========================================
+    const daftarKelasValid = ["X-2", "XI-2", "XII-5"]; // Hanya izinkan 3 kelas ini
+
+    if (!daftarKelasValid.includes(kelasBersih)) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Penulisan Kelas Salah!',
+            text: 'Harap ketik kelas dengan format yang benar: X-2, XI-2, atau XII-5 (Gunakan angka romawi dan tanda strip).',
+            confirmButtonColor: '#007bff'
+        });
+        
+        tombolSubmit.innerText = "Kirim Absen";
+        tombolSubmit.disabled = false;
+        sedangMemproses = false; 
+        
+        return; // Hentikan pengiriman data!
+    }
 
     // ==========================================
     // VALIDASI WAJIB KETERANGAN (SAKIT/IZIN)
@@ -266,7 +326,7 @@ absenForm.addEventListener("submit", async (e) => {
                 icon: 'warning',
                 title: 'Sudah Presensi!',
                 html: `Siswa bernama <b>${namaSiswaInput.value}</b> sudah tercatat melakukan absensi.`,
-                timer: 3000,
+                timer: 4000,
                 showConfirmButton: false
             });
 
@@ -280,7 +340,7 @@ absenForm.addEventListener("submit", async (e) => {
             // Nyalakan ulang kamera untuk siswa berikutnya setelah peringatan hilang
             setTimeout(() => {
                 try { html5QrcodeScanner.resume(); } catch(e) {}
-            }, 3000);
+            }, 4000);
 
             return; // Hentikan proses, jangan lanjut ke GPS atau simpan data
         }
@@ -312,7 +372,7 @@ absenForm.addEventListener("submit", async (e) => {
                 // Pindahkan setTimeout ke SINI (sebelum return)
                 setTimeout(() => {
                     try { html5QrcodeScanner.resume(); } catch(e) {}
-                }, 2500);
+                }, 3000);
                 
                 return; // Hentikan proses absen
             }
