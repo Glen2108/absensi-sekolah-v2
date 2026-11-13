@@ -140,6 +140,7 @@ statusSiswaInput.addEventListener("change", () => {
 // ==========================================
 function validasiJadwal(kelas) {
 
+    return { diizinkan: true, pesan: "" };
     const waktu = new Date();
     const hari = waktu.getDay(); // 0=Minggu, 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu
     const waktuTotalMenit = (waktu.getHours() * 60) + waktu.getMinutes();
@@ -326,14 +327,22 @@ absenForm.addEventListener("submit", async (e) => {
             
             // Tambahkan garis miring (/) di depan agar path absolut
             imageUrl: `/img/siswa/${namaSiswaInput.value}.jpg`,
-            imageWidth: 120,
-            imageHeight: 120,
+            imageWidth: 140,
+            imageHeight: 140,
             imageAlt: 'Foto Siswa',
             
             // Ganti didError dengan didOpen dan tangkap event onerror
             didOpen: () => {
                 const img = Swal.getImage();
                 if (img) {
+                    // --- KUSTOMISASI TAMPILAN FOTO ---
+                    img.style.borderRadius = '50%'; // Membuatnya bulat sempurna
+                    img.style.border = '4px solid #007bff'; // Bingkai biru senada dengan tema
+                    img.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15)'; // Efek bayangan elegan
+                    img.style.objectFit = 'cover'; // Mencegah foto penyok/gepeng jika resolusinya tidak pas kotak
+                    img.style.margin = '15px auto'; // Memberi ruang napas di sekitar foto
+                    
+                    // --- FALLBACK KE AVATAR DEFAULT ---
                     img.onerror = () => { 
                         img.src = '/img/avatar-default.png'; 
                     };
