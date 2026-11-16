@@ -1,16 +1,21 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyALEqF4jv2EhhfCnzigsbFE1kLBuSM2JVI",
-  authDomain: "absensi-sekolah-v2.firebaseapp.com",
-  projectId: "absensi-sekolah-v2",
-  storageBucket: "absensi-sekolah-v2.firebasestorage.app",
-  messagingSenderId: "37227813725",
-  appId: "1:37227813725:web:b3fc5edb8889e618d3a6b4"
+  apiKey: "AIzaSyD8IAdxeAe51MWYe9a4MBpOKiDk3e1QnBA",
+  authDomain: "absensi-sekolah-v3.firebaseapp.com",
+  projectId: "absensi-sekolah-v3",
+  storageBucket: "absensi-sekolah-v3.firebasestorage.app",
+  messagingSenderId: "1052209110554",
+  appId: "1:1052209110554:web:4837264e9111d69939bba3",
+  measurementId: "G-3B9HF3DKX0"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const analytics = getAnalytics(app);
