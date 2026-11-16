@@ -180,7 +180,6 @@ kelasSiswaInput.addEventListener("input", () => {
 // ==========================================
 function validasiJadwal(kelas) {
 
-    return { diizinkan: true, pesan: "" };
     const waktu = new Date();
     const hari = waktu.getDay(); // 0=Minggu, 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu
     const waktuTotalMenit = (waktu.getHours() * 60) + waktu.getMinutes();
@@ -288,7 +287,7 @@ absenForm.addEventListener("submit", async (e) => {
             icon: 'error',
             title: 'Sesi Tertutup',
             text: jadwal.pesan,
-            timer: 4000,
+            timer: 4500,
             showConfirmButton: false
         });
         
@@ -301,7 +300,7 @@ absenForm.addEventListener("submit", async (e) => {
         
         setTimeout(() => {
             try { html5QrcodeScanner.resume(); } catch(e) {}
-        }, 4000);
+        }, 4500);
         
         return; // Hentikan proses, siswa tidak bisa absen!
     }
@@ -326,7 +325,7 @@ absenForm.addEventListener("submit", async (e) => {
                 icon: 'warning',
                 title: 'Sudah Presensi!',
                 html: `Siswa bernama <b>${namaSiswaInput.value}</b> sudah tercatat melakukan absensi.`,
-                timer: 4000,
+                timer: 4500,
                 showConfirmButton: false
             });
 
@@ -340,7 +339,7 @@ absenForm.addEventListener("submit", async (e) => {
             // Nyalakan ulang kamera untuk siswa berikutnya setelah peringatan hilang
             setTimeout(() => {
                 try { html5QrcodeScanner.resume(); } catch(e) {}
-            }, 4000);
+            }, 4500);
 
             return; // Hentikan proses, jangan lanjut ke GPS atau simpan data
         }
@@ -372,7 +371,7 @@ absenForm.addEventListener("submit", async (e) => {
                 // Pindahkan setTimeout ke SINI (sebelum return)
                 setTimeout(() => {
                     try { html5QrcodeScanner.resume(); } catch(e) {}
-                }, 3000);
+                }, 4500);
                 
                 return; // Hentikan proses absen
             }
@@ -451,7 +450,7 @@ absenForm.addEventListener("submit", async (e) => {
             } catch(e) {
                 console.log("Kamera siap.");
             }
-        }, 2500);
+        }, 3500);
 
     } catch (error) {
         let pesanError = error.message || error;
