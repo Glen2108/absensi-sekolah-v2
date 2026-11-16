@@ -1,11 +1,13 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+// firebase-config.js
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// 1. Gunakan URL CDN lengkap untuk semua import Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+
+// Tambahkan import Firestore dan Auth yang dibutuhkan oleh app.js dan dashboard.js
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyD8IAdxeAe51MWYe9a4MBpOKiDk3e1QnBA",
   authDomain: "absensi-sekolah-v3.firebaseapp.com",
@@ -19,3 +21,10 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+
+// 2. Inisialisasi Firestore Database dan Authentication
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// 3. Wajib di-export agar bisa dipakai di app.js, auth.js, dan dashboard.js
+export { app, db, auth };
